@@ -3,8 +3,9 @@ from boid import *
 import time
 import unittest
 
-def ruleTest(boid):
-	print("rule test")
+class RuleTest:
+	def apply(boid):
+		return array([0,0,0])
 
 class BoidTest(unittest.TestCase):
 	def testNumpy(self):
@@ -17,7 +18,7 @@ class BoidTest(unittest.TestCase):
 		
 	def testAttrBoid(self):
 		position = array([1,2,3])
-		boid = Boid([],position)
+		boid = Boid(0,[],position)
 		self.assertEqual(boid.position[0],position[0])
 		self.assertEqual(boid.position[1],position[1])
 		self.assertEqual(boid.position[2],position[2])
@@ -27,24 +28,24 @@ class BoidTest(unittest.TestCase):
 		boidUniverse = BoidsUniverse()
 		position = array([1,2,3])
 		boid = boidUniverse.createBoid(position)
-		boidUniverse.addRule(ruleTest)
-		self.assertEqual(1,len(boid.rules))
-		self.assertEqual(1,len(boidUniverse.boids))
+		boidUniverse.addRule(RuleTest())
+		self.assertEqual(5,len(boid.rules))
+		self.assertEqual(11,len(boidUniverse.boids))
 		
 	def testCreateBoids(self):
 		boidUniverse = BoidsUniverse()
 		boid = boidUniverse.createBoids(5)
-		self.assertEqual(5,len(boidUniverse.boids))
+		self.assertEqual(15,len(boidUniverse.boids))
 		
 	def testDeleteBoid(self):
 		boidUniverse = BoidsUniverse()
 		position = array([1,2,3])
 		boid = boidUniverse.createBoid(position)
 		boidUniverse.destroyBoid(boid)
-		self.assertEqual(0,len(boidUniverse.boids))
+		self.assertEqual(10,len(boidUniverse.boids))
 		
 	def testUniverseSize(self):
-		boidUniverse = BoidsUniverse(100,100,100)
+		boidUniverse = BoidsUniverse(10,100,100,100)
 		self.assertEqual(100,boidUniverse.width)
 		self.assertEqual(100,boidUniverse.height)
 		self.assertEqual(100,boidUniverse.depth)
@@ -54,7 +55,7 @@ class BoidTest(unittest.TestCase):
 		self.assertEqual(4,f(2,2))
 		
 	def testEngine(self):
-		engine = BoidsEngine(1)
+		engine = BoidsEngine()
 		engine.start()
 		time.sleep(3)
 		self.assertTrue(engine.running)

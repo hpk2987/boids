@@ -19,7 +19,7 @@ class RuleFlockCenterOfMass:
 		return (c - boid.position)*self.influence
 
 class RuleAvoidCollisions:
-	def __init__(self,minDistance=100):
+	def __init__(self,minDistance=10):
 		self.minDistance = minDistance
 	
 	def apply(self,boid,universe,acumm):
@@ -45,7 +45,7 @@ class RuleMatchFlockVelocity:
 		return (c - boid.velocity)*self.influence
 
 class RuleKeepInBounds:
-	def __init__(self,attraction=10):
+	def __init__(self,attraction=20):
 		self.attraction=attraction
 	
 	def apply(self,boid,universe,acumm):
@@ -100,8 +100,8 @@ class BoidsUniverse:
 	def createBoids(self, amount=20):
 		for i in range(amount):			
 			randomPosition = array(
-				[random.randint(0,self.width),
-				random.randint(0,self.height),
+				[random.randint(0,self.width/10),
+				random.randint(0,self.height/10),
 				0])
 				#random.randint(0,self.depth)])
 				

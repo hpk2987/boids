@@ -29,7 +29,7 @@ class BoidTest(unittest.TestCase):
 		position = array([1,2,3])
 		boid = boidUniverse.createBoid(position)
 		boidUniverse.addRule(RuleTest())
-		self.assertEqual(5,len(boid.rules))
+		self.assertEqual(6,len(boid.rules))
 		self.assertEqual(11,len(boidUniverse.boids))
 		
 	def testCreateBoids(self):

@@ -33,7 +33,7 @@ class BoidTest(unittest.TestCase):
 		thread.start()		
 		remote = jsonrpclib.Server('http://localhost:8080/')
 		remote.start_boids()		
-		remote.
+		remote.boids()
 		remote.stop_server()
 		thread.join()
 		

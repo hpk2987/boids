@@ -1,157 +1,181 @@
-var BOIDS = { REVISION : '1' }
+var BOIDS = { REVISION : '1' };
 
 BOIDS.Vec3 = function(x,y,z){
-	this.x=x
-	this.y=y
-	this.z=z
-}
+	this.x=x;
+	this.y=y;
+	this.z=z;
+};
 
 BOIDS.Vec3.prototype.add = function(vec){
-	return new Vec3(this.x+vec.x,this.y+vec.y,this.z+vec.z);
-}
+	return new BOIDS.Vec3(
+		this.x+vec.x,
+		this.y+vec.y,
+		this.z+vec.z);
+};
 
 BOIDS.Vec3.prototype.sub = function(vec){
-	return new Vec3(this.x-vec.x,this.y-vec.y,this.z-vec.z);
-}
+	return new BOIDS.Vec3(this.x-vec.x,this.y-vec.y,this.z-vec.z);
+};
 
 BOIDS.Vec3.prototype.mult = function(scalar){
-	return new Vec3(this.x*scalar,this.y*scalar,this.z*scalar);
-}
+	return new BOIDS.Vec3(this.x*scalar,this.y*scalar,this.z*scalar);
+};
 
 BOIDS.Vec3.prototype.norm = function(){
-	return new Math.sqrt(Math.pow(this.x,2)+Math.pow(this.y,2)+Math.pow(this.z,2));
-}
+	return Math.sqrt(Math.pow(this.x,2)+Math.pow(this.y,2)+Math.pow(this.z,2));
+};
+
+BOIDS.Vec3.prototype.getIdx = function(idx){
+	if( idx=== 0){
+		return this.x;
+	}else if( idx== 1){
+		return this.y;
+	}else if( idx== 2){
+		return this.z;
+	}
+};
 
 BOIDS.Boid = function(num,position){
-	this.position=0;
-	this.velocity = new Vec3(0,0,0);
+	this.position = position;
+	this.velocity = new BOIDS.Vec3(0,0,0);
 	this.num=num;
-}
+};
 
 BOIDS.Boid.prototype.update = function(){
-	this.position = this.position.add(self.velocity);
-}
+	this.position = this.position.add(this.velocity);
+};
 
 BOIDS.BoidsUniverse = function(){
-	this.rules = [RuleFlockCenterOfMass(),RuleAvoidCollisions(),RuleMatchFlockVelocity(),RuleKeepInBounds(),RuleSpeedLimit()];
+	this.rules = [
+		new BOIDS.RuleFlockCenterOfMass(),
+		new BOIDS.RuleAvoidCollisions(),
+		new BOIDS.RuleMatchFlockVelocity(),
+		new BOIDS.RuleKeepInBounds(),
+		new BOIDS.RuleSpeedLimit()];
 	this.boids = [];
 	this.width = 1000;
 	this.height = 1000;
 	this.depth = 1000;
-	this.boidCreationCounter=0;
-	if (startingBoids > 0){
-		self.createBoids(10);
-	}
-}
+	this.boidCreationCounter=0;	
+};
 	
 BOIDS.BoidsUniverse.prototype.createBoid = function(position){
-	boid = new Boid(this.boidCreationCounter,position);
-	self.boidCreationCounter+=1;
-	self.boids.push(boid);
+	var boid = new BOIDS.Boid(this.boidCreationCounter,position);
+	this.boidCreationCounter+=1;
+	this.boids.push(boid);
 	return boid;
-}
+};
 
-BOIDS.BoidsUniverse.prototype.createBoids = function(amount=20){
+BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
 	var randomPosition;
 	for (var i=0 ; i<amount ; i++){
-		randomPosition = new Vec3(
-			Math.random*this.width/10,
-			Math.random*this.height/10,
+		randomPosition = new BOIDS.Vec3(
+			Math.random()*this.width/10,
+			Math.random()*this.height/10,
 			0);
-	}		
-	this.createBoid(randomPosition);
-}
+		this.createBoid(randomPosition);
+	}			
+};
 
 BOIDS.BoidsUniverse.prototype.update = function(){
 	var deltaVelocity;
-	for(var i=0; i<this.boids.lenght ;i++){
-		deltaVelocity = new Vec3(0,0,0);
-		for(var w=0; w<this.rules.lenght ;w++){
-			deltaVelocity = deltaVelocity.add(this.rules[w].apply(this.boids[i],this,deltaVelocity);
+	for(var i=0; i<this.boids.length ;i++){
+		deltaVelocity = new BOIDS.Vec3(0,0,0);
+		for(var w=0; w<this.rules.length ;w++){
+			deltaVelocity = deltaVelocity.add(this.rules[w].apply(this.boids[i],this,deltaVelocity));
 		}
-		this.boids[s].velocity = this.boids[s].velocity.add(deltaVelocity);
-		this.boids[s].update();
+		this.boids[i].velocity = this.boids[i].velocity.add(deltaVelocity);
+		this.boids[i].update();
 	}
-}
+};
 
 BOIDS.BoidsEngine = function(){
-	this.universe = new BoidsUniverse();
-	this.universe.createBoids();
-}
+	this.universe = new BOIDS.BoidsUniverse();
+	this.universe.createBoids(10);
+};
 		
-BOIDS.BoidsEngine.prototype = engineLoop(){
+BOIDS.BoidsEngine.prototype.engineLoop = function(){
 	this.universe.update();
-}
+};
 
 BOIDS.RuleFlockCenterOfMass = function(){
 	this.influence = 0.01;
-}
+};
 	
 BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){
-	var c = new Vec3(0,0,0);
-	for(var i=0; i<universe.boids.lenght ;i++){
+	var c = new BOIDS.Vec3(0,0,0);
+	for(var i=0; i<universe.boids.length ;i++){
 		var otherBoid = universe.boids[i];
 		if (otherBoid!=boid) {
 			c = c.add(otherBoid.position);
 		}
 	}
-	c = c.mult(1 / (universe.boids.length)-1));
+	c = c.mult(1 / ((universe.boids.length)-1));
 	return (c.sub(boid.position)).mult(this.influence);
-}
+};
 
 BOIDS.RuleAvoidCollisions = function() {
 	this.minDistance = 10;
-}
+};
 	
 BOIDS.RuleAvoidCollisions.prototype.apply = function(boid,universe,acumm){
-	var c = new Vec3(0,0,0);
-	for(var i=0; i<universe.boids.lenght ;i++){
+	var c = new BOIDS.Vec3(0,0,0);
+	for(var i=0; i<universe.boids.length ;i++){
 		var otherBoid = universe.boids[i];
 		if (otherBoid!=boid) {
-			if (boid.position.sub(otherBoid.position)).norm() < this.minDistance:
+			if (boid.position.sub(otherBoid.position).norm() < this.minDistance){
 				c = c.add(boid.position.sub(otherBoid.position));
+			}
 		}
 	}
 
 	return c;
-}
+};
 		
-class RuleMatchFlockVelocity:
-	def __init__(this,influence=0.01):
-		this.influence = influence
-	
-	def apply(this,boid,universe,acumm):
-		c = array([0,0,0])
-		for otherBoid in universe.boids:
-			if otherBoid!=boid:
-				c += otherBoid.velocity
-		c = c / (len(universe.boids)-1)
-		
-		return (c - boid.velocity)*this.influence
+BOIDS.RuleMatchFlockVelocity = function(){
+	this.influence = 0.01;
+};	
 
-class RuleKeepInBounds:
-	def __init__(this,attraction=20):
-		this.attraction=attraction
+BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid,universe,acumm){
+	var c = new BOIDS.Vec3(0,0,0);
+	for(var i=0; i<universe.boids.length ;i++){
+		var otherBoid = universe.boids[i];
+		if (otherBoid!=boid) {
+			c = c.add(otherBoid.velocity);
+		}
+	}
+	c = c.mult( 1 / (universe.boids.length-1));
 	
-	def apply(this,boid,universe,acumm):
-		c = array([0,0,0])
-		ref = array([universe.width,universe.height,universe.depth])
-		for i in range(3):
-			if(boid.position[i]>ref[i]):
-				c[i] -= this.attraction
-			elif (boid.position[i]<0):
-				c[i] = this.attraction
-		
-		return c
+	return (c.sub(boid.velocity)).mult(this.influence);
+};
 
-class RuleSpeedLimit:
-	def __init__(this,limit=10):
-		this.limit = limit
-	
-	def apply(this,boid,universe,acumm):
-		c = boid.velocity + acumm
-		speed = linalg.norm(c)
-		if (speed > this.limit):
-			c = (c)*((this.limit/speed)-1)
-			
-		return c
+BOIDS.RuleKeepInBounds = function(){
+	this.attraction=20;
+};
+
+BOIDS.RuleKeepInBounds.prototype.apply = function(boid,universe,acumm) {
+	var c = [0,0,0];
+	var ref = [universe.width,universe.height,universe.depth];
+	for (var i=0 ; i<3 ; i++){
+		if(boid.position.getIdx(i)>ref[i]){
+			c[i] -= this.attraction;
+		}else if(boid.position.getIdx(i)<0){
+			c[i] = this.attraction;
+		}
+	}
+	return new BOIDS.Vec3(c[0],c[1],c[2]);
+};
+
+BOIDS.RuleSpeedLimit = function(){
+	this.limit = 10;
+};
+
+BOIDS.RuleSpeedLimit.prototype.apply = function(boid,universe,acumm){
+	var c = boid.velocity.add(acumm);
+	speed = c.norm();
+	if (speed > this.limit){
+		c = (c).mult((this.limit/speed)-1);
+	}
+		
+	return c;
+};

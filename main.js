@@ -3,7 +3,7 @@ window.onload = function(){
 	webGLStart();
 }
 
-var lastRenderTime = Date.now;
+var lastRenderTime = Date.now();
 var scene;
 var camera;
 var renderer;
@@ -84,7 +84,7 @@ function initializeScene(){
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
-		squareMesh.scale.set(10,10,1);
+		squareMesh.scale.set(3,3,1);
 		boid.mesh = squareMesh;
 		
 		scene.add(squareMesh);
@@ -105,7 +105,7 @@ function initializeScene(){
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
-		velocityMesh.scale.set(10,10,1);
+		velocityMesh.scale.set(3,3,1);
 		boid.velocityMesh = velocityMesh;		
 		scene.add(velocityMesh);
 	}
@@ -114,7 +114,6 @@ function initializeScene(){
 
 function renderScene(){
     var delta=(Date.now()-lastRenderTime)/1000;
-    console.log(delta);
     if (delta>0){
         for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
 			var boid = boidsEngine.universe.boids[i];
@@ -125,12 +124,13 @@ function renderScene(){
 				boid.position.z);
 			
 			boid.velocityMesh.dynamic = true;
-			boid.velocityMesh.verticesNeedUpdate = true;
+			boid.velocityMesh.geometry.verticesNeedUpdate = true;
 			boid.velocityMesh.geometry.vertices.pop();
 			boid.velocityMesh.geometry.vertices.push(new THREE.Vector3(
 			boid.velocity.x,
 			boid.velocity.y, 
 			boid.velocity.z));
+			boid.velocityMesh.scale.set(30,30,1);
 			console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
 			
 			boid.velocityMesh.position.set(

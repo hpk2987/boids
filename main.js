@@ -59,19 +59,35 @@ function initializeScene(){
     
     boidsEngine = new BOIDS.BoidsEngine();
     
+    //Create Obstacles Meshes
+    for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
+		var circleMaterial = new THREE.MeshBasicMaterial({
+			color:0xFFFFFF,
+			side:THREE.DoubleSide
+		});
+		
+		var obstacle = boidsEngine.universe.obstacles[i];
+		var circleMesh = new THREE.Mesh(new THREE.CircleGeometry(obstacle.size), circleMaterial);
+		circleMesh.position.set(
+			obstacle.position.x,
+			obstacle.position.y,
+			obstacle.position.z);
+		
+		obstacle.mesh = circleMesh;
+		scene.add(obstacle.mesh);
+	}
+    
     //Create Boids Meshes
     for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
-		var squareGeometry = new THREE.Geometry();
+		var boidGeometry = new THREE.Geometry();
 		
-		squareGeometry.vertices.push(new THREE.Vector3(-1.0,  1.0, 0.0));
-		squareGeometry.vertices.push(new THREE.Vector3( 1.0,  1.0, 0.0));
-		squareGeometry.vertices.push(new THREE.Vector3( 1.0,  -1.0, 0.0));		
-		squareGeometry.vertices.push(new THREE.Vector3(-1.0, -1.0, 0.0));
-		squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
-		squareGeometry.faces.push(new THREE.Face3(2, 0, 3));
-
+		boidGeometry.vertices.push(new THREE.Vector3(-1.0,  1.0, 0.0));
+		boidGeometry.vertices.push(new THREE.Vector3(-1.0,  -1.0, 0.0));
+		boidGeometry.vertices.push(new THREE.Vector3( 0.0,  0.0, 0.0));		
+		boidGeometry.faces.push(new THREE.Face3(0, 1, 2));
+		
 		// Create a white basic material and activate the 'doubleSided' attribute.
-		var squareMaterial = new THREE.MeshBasicMaterial({
+		var boidMaterial = new THREE.MeshBasicMaterial({
 			color:0xFFFFFF,
 			side:THREE.DoubleSide
 		});
@@ -79,22 +95,22 @@ function initializeScene(){
 		var boid = boidsEngine.universe.boids[i];
 
 		// Create a mesh and insert the geometry and the material.
-		var squareMesh = new THREE.Mesh(squareGeometry, squareMaterial);
-		squareMesh.position.set(
+		var boidMesh = new THREE.Mesh(boidGeometry, boidMaterial);
+		boidMesh.position.set(
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
-		squareMesh.scale.set(3,3,1);
-		boid.mesh = squareMesh;
+		boidMesh.scale.set(8,8,1);
+		boid.mesh = boidMesh;
 		
-		scene.add(squareMesh);
+		scene.add(boidMesh);
 		
 		var velocityGeometry = new THREE.Geometry();
 		velocityGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
-		velocityGeometry.vertices.push(new THREE.Vector3(
-			boid.velocity.x,
-			boid.velocity.y, 
-			boid.velocity.z));
+		velocityGeometry.vertices.push(new THREE.Vector3(1,0,0));
+		velocityGeometry.vertices.push(new THREE.Vector3(0.85,0.1,0));
+		velocityGeometry.vertices.push(new THREE.Vector3(0.85,-0.1,0));
+		velocityGeometry.vertices.push(new THREE.Vector3(1,0,0));
 		
 		var velocityMaterial = new THREE.LineBasicMaterial({
 			color: 0xffffff
@@ -105,7 +121,7 @@ function initializeScene(){
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
-		velocityMesh.scale.set(3,3,1);
+		velocityMesh.scale.set(30,30,1);
 		boid.velocityMesh = velocityMesh;		
 		scene.add(velocityMesh);
 	}
@@ -123,20 +139,23 @@ function renderScene(){
 				boid.position.y,
 				boid.position.z);
 			
-			boid.velocityMesh.dynamic = true;
-			boid.velocityMesh.geometry.verticesNeedUpdate = true;
-			boid.velocityMesh.geometry.vertices.pop();
-			boid.velocityMesh.geometry.vertices.push(new THREE.Vector3(
-			boid.velocity.x,
-			boid.velocity.y, 
-			boid.velocity.z));
-			boid.velocityMesh.scale.set(30,30,1);
+			var angle = Math.acos(boid.velocity.x/boid.velocity.norm());
+			
+			if(boid.velocity.y < 0){
+				angle = -angle;
+			}
+			
+			boid.mesh.rotation.z = angle;
+			
 			console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
 			
 			boid.velocityMesh.position.set(
 				boid.position.x,
 				boid.position.y,
 				boid.position.z);
+				
+			
+			boid.velocityMesh.rotation.z = angle;
 		}
 		lastRenderTime=Date.now();
 		renderer.render(scene, camera);

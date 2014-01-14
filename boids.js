@@ -38,7 +38,7 @@ BOIDS.Vec3.prototype.getIdx = function(idx){
 BOIDS.Boid = function(num,position,velocity){
 	this.position = position;
 	this.velocity = velocity;
-	this.viewDistance = 20;
+	this.viewDistance = 100;
 	this.num=num;
 };
 
@@ -46,8 +46,9 @@ BOIDS.Boid.prototype.update = function(){
 	this.position = this.position.add(this.velocity);
 };
 
-BOIDS.Obstacle = function(position,size){
+BOIDS.Obstacle = function(position,size,height){
 	this.size = size;
+	this.height=height;
 	this.position = position;
 }
 
@@ -76,7 +77,7 @@ BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
 };
 
 BOIDS.BoidsUniverse.prototype.createObstacles = function(amount){
-	this.obstacles.push(new BOIDS.Obstacle(new BOIDS.Vec3(500,500,0),60));
+	this.obstacles.push(new BOIDS.Obstacle(new BOIDS.Vec3(500,500,0),60,60));
 };
 
 BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
@@ -84,13 +85,13 @@ BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
 	var randomVelocity;
 	for (var i=0 ; i<amount ; i++){
 		randomPosition = new BOIDS.Vec3(
-			Math.random()*this.width/10,
-			Math.random()*this.height/10,
-			0);
+			Math.random()*this.width,
+			Math.random()*this.height,
+			Math.random()*this.depth);
 		randomVelocity = new BOIDS.Vec3(
 			Math.random()*3,
 			Math.random()*3,
-			0);
+			Math.random()*3);
 		this.createBoid(randomPosition,randomVelocity);
 	}			
 };
@@ -102,14 +103,17 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 		for(var w=0; w<this.rules.length ;w++){
 			deltaVelocity = deltaVelocity.add(this.rules[w].apply(this.boids[i],this,deltaVelocity));
 		}
-		this.boids[i].velocity = this.boids[i].velocity.add(deltaVelocity);
+		this.boids[i].velocity = this.boids[i].velocity.add(deltaVelocity);		
+	}
+	
+	for(var i=0; i<this.boids.length ;i++){
 		this.boids[i].update();
 	}
 };
 
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(10);
+	this.universe.createBoids(100);
 	this.universe.createObstacles(1);
 };
 		
@@ -118,7 +122,7 @@ BOIDS.BoidsEngine.prototype.engineLoop = function(){
 };
 
 BOIDS.RuleFlockCenterOfMass = function(){
-	this.influence = 2.0;
+	this.influence = 0.004;
 };
 	
 BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){
@@ -131,7 +135,7 @@ BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){
 			count++;
 		}
 	}
-	if (c==0){
+	if (count!=0){
 		c = c.mult(1 / count);
 		return (c.sub(boid.position)).mult(this.influence);
 	}else{
@@ -140,25 +144,25 @@ BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){
 };
 
 BOIDS.RuleSeparateFlock = function() {
-	this.minDistance = 7;
-};
-	
+	this.influence = 0.09;
+	this.distance = 10.0;
+};	
 BOIDS.RuleSeparateFlock.prototype.apply = function(boid,universe,acumm){
 	var c = new BOIDS.Vec3(0,0,0);
 	for(var i=0; i<universe.boids.length ;i++){
 		var otherBoid = universe.boids[i];
 		if (otherBoid!=boid) {
-			if (boid.position.sub(otherBoid.position).norm() < this.minDistance){
-				c = c.sub(otherBoid.position.sub(boid.position));
+			if (boid.position.sub(otherBoid.position).norm() < this.distance){
+				c = c.add(boid.position.sub(otherBoid.position));
 			}
 		}
 	}
 
-	return c;
+	return c.mult(this.influence);
 };
 		
 BOIDS.RuleMatchFlockVelocity = function(){
-	this.influence = 0.08;
+	this.influence = 0.04;
 };	
 
 BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid,universe,acumm){
@@ -172,7 +176,7 @@ BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid,universe,acumm){
 		}
 	}
 	
-	if (c==0){
+	if (count!=0){
 		c = c.mult( 1 / count);	
 		return (c.sub(boid.velocity)).mult(this.influence);
 	}else{
@@ -181,7 +185,7 @@ BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid,universe,acumm){
 };
 
 BOIDS.RuleKeepInBounds = function(){
-	this.attraction=3;
+	this.attraction=0.1;
 };
 
 BOIDS.RuleKeepInBounds.prototype.apply = function(boid,universe,acumm) {
@@ -212,26 +216,37 @@ BOIDS.RuleSpeedLimit.prototype.apply = function(boid,universe,acumm){
 };
 
 BOIDS.RuleReachObjective = function(){
-	this.influence = 0.01;
-	this.objective = new BOIDS.Vec3(900,900,0);
+	this.influence = 0.08;
+	//this.objectiveSpeed = new BOIDS.Vec3(0.1,0.1,0);
+	this.objective = new BOIDS.Vec3(900,900,900);
 } 
 
 BOIDS.RuleReachObjective.prototype.apply = function(boid,universe,acumm){
+	if(boid.position.sub(this.objective).norm()<10){
+		this.objective = new BOIDS.Vec3(
+					this.objective.x==0?900:0,
+					this.objective.y==0?900:0,
+					this.objective.z==0?900:0);
+	}
+	
 	var c = this.objective.sub(boid.position);
 	c = c.mult(1/c.norm()).mult(this.influence);
 	return c;
+	/*return this.objectiveSpeed.mult(this.influence);*/
 };
 
 BOIDS.RuleAvoidCollision = function() {
-	this.minDistance = 0;
+	this.feelerPrediction = 15;
 };
 	
 BOIDS.RuleAvoidCollision.prototype.apply = function(boid,universe,acumm){
 	var c = new BOIDS.Vec3(0,0,0);
 	for(var i=0; i<universe.obstacles.length ;i++){
 		var obstacle = universe.obstacles[i];
-		if (boid.position.sub(obstacle.position).norm() < obstacle.size + this.minDistance){
-			c = c.sub(obstacle.position.sub(boid.position));
+		var feeler = boid.position.add(boid.velocity.mult(this.feelerPrediction));
+		if (feeler.sub(obstacle.position).norm() < obstacle.size){
+			var w = feeler.sub(obstacle.position);
+			c = c.add(w.mult(20));
 		}
 	}
 

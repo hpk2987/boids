@@ -43,37 +43,68 @@ function initializeScene(){
     scene = new THREE.Scene();
 
     //Camara    
-    /*camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 100);
-    camera.position.set(0, 0, 0);
-	camera.lookAt(scene.position);*/
-    camera = new THREE.OrthographicCamera( 
+    camera = new THREE.PerspectiveCamera(
+					45, 
+					canvasWidth / canvasHeight, 
+					0.1, 
+					2000);
+					
+    camera.position.set(0, -600 , 0);
+    
+    /*camera = new THREE.OrthographicCamera( 
 					0, 
 					1000,
 					0, 
 					1000, -50, 50 );
 					
-    camera.position.set(0, 0, -2);
-    //camera.lookAt(scene.position);
+    camera.position.set(0, 0, -2);*/
+    
+    camera.lookAt(scene.position);
     
     scene.add(camera);
     
     boidsEngine = new BOIDS.BoidsEngine();
     
+    //Universe
+    var universeGeometry = new THREE.CubeGeometry( 
+							boidsEngine.universe.width,
+							boidsEngine.universe.height,
+							boidsEngine.universe.depth);
+
+	var universeMaterial = new THREE.MeshBasicMaterial({
+		color:0xFFFFFF,
+		wireframe: true
+	} );
+
+	var universeMesh = new THREE.Mesh( universeGeometry, universeMaterial );
+	universeMesh.position.set(500,500,500);
+    boidsEngine.universe.mesh = universeMesh;
+    scene.add(universeMesh);
+    
+    
     //Create Obstacles Meshes
     for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
-		var circleMaterial = new THREE.MeshBasicMaterial({
+		var obstacleMaterial = new THREE.MeshBasicMaterial({
 			color:0xFFFFFF,
-			side:THREE.DoubleSide
 		});
 		
 		var obstacle = boidsEngine.universe.obstacles[i];
-		var circleMesh = new THREE.Mesh(new THREE.CircleGeometry(obstacle.size), circleMaterial);
-		circleMesh.position.set(
+		var obstacleMesh = new THREE.Mesh(		
+			new THREE.CylinderGeometry(
+					obstacle.size,
+					obstacle.size,
+					obstacle.height,
+					obstacle.size,
+					10,
+					false),
+					obstacleMaterial);
+					
+		obstacleMesh.position.set(
 			obstacle.position.x,
 			obstacle.position.y,
 			obstacle.position.z);
 		
-		obstacle.mesh = circleMesh;
+		obstacle.mesh = obstacleMesh;
 		scene.add(obstacle.mesh);
 	}
     
@@ -105,7 +136,7 @@ function initializeScene(){
 		
 		scene.add(boidMesh);
 		
-		var velocityGeometry = new THREE.Geometry();
+		/*var velocityGeometry = new THREE.Geometry();
 		velocityGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
 		velocityGeometry.vertices.push(new THREE.Vector3(1,0,0));
 		velocityGeometry.vertices.push(new THREE.Vector3(0.85,0.1,0));
@@ -123,31 +154,67 @@ function initializeScene(){
 			boid.position.z);
 		velocityMesh.scale.set(30,30,1);
 		boid.velocityMesh = velocityMesh;		
-		scene.add(velocityMesh);
+		scene.add(velocityMesh);*/
+		
+		// boid sight
+		/*var circleMaterial = new THREE.MeshBasicMaterial({
+			color:0xFFFFFF,
+			wireframe: true,
+			side:THREE.DoubleSide
+		});
+		
+		var circleMesh = new THREE.Mesh(new THREE.CircleGeometry(boid.viewDistance), circleMaterial);
+		circleMesh.position.set(
+			boid.position.x,
+			boid.position.y,
+			boid.position.z);
+		
+		boid.sightMesh = circleMesh;
+		scene.add(circleMesh);*/
 	}
 }
 
 
 function renderScene(){
-    var delta=(Date.now()-lastRenderTime)/1000;
+    var delta=(Date.now()-lastRenderTime)/10000;
     if (delta>0){
         for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
 			var boid = boidsEngine.universe.boids[i];
-			console.log(boid.num+" x =[ "+boid.position.x+" , "+boid.position.y+" , "+boid.position.z+ " ] ");
+			//console.log(boid.num+" x =[ "+boid.position.x+" , "+boid.position.y+" , "+boid.position.z+ " ] ");
 			boid.mesh.position.set(
 				boid.position.x,
 				boid.position.y,
 				boid.position.z);
 			
-			var angle = Math.acos(boid.velocity.x/boid.velocity.norm());
+			/*boid.sightMesh.position.set(
+				boid.position.x,
+				boid.position.y,
+				boid.position.z);*/
+			
+			var velNorm = boid.velocity.norm();
+			var angleX = Math.acos(boid.velocity.x/velNorm);
 			
 			if(boid.velocity.y < 0){
-				angle = -angle;
+				angleX = -angleX;
 			}
 			
-			boid.mesh.rotation.z = angle;
+			var angleY = Math.acos(boid.velocity.y/velNorm);
 			
-			console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
+			if(boid.velocity.z < 0){
+				angleY = -angleY;
+			}
+			
+			var angleZ = Math.acos(boid.velocity.z/velNorm);
+			
+			if(boid.velocity.x < 0){
+				angleZ = -angleZ;
+			}
+			
+			boid.mesh.rotation.z = angleX;
+			boid.mesh.rotation.x = angleY;
+			boid.mesh.rotation.y = angleZ;
+			
+			/*console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
 			
 			boid.velocityMesh.position.set(
 				boid.position.x,
@@ -155,7 +222,9 @@ function renderScene(){
 				boid.position.z);
 				
 			
-			boid.velocityMesh.rotation.z = angle;
+			boid.velocityMesh.rotation.z = angleX;
+			boid.velocityMesh.rotation.y = angleZ;
+			boid.velocityMesh.rotation.x = angleY;*/
 		}
 		lastRenderTime=Date.now();
 		renderer.render(scene, camera);

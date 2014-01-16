@@ -39,7 +39,7 @@ function initializeScene(){
 
     document.getElementById("canvas").appendChild(renderer.domElement);
 
-    //Scene
+	//Scene
     scene = new THREE.Scene();
 
     //Camara    
@@ -47,21 +47,26 @@ function initializeScene(){
 					45, 
 					canvasWidth / canvasHeight, 
 					0.1, 
-					2000);
+					1500);
 					
-    camera.position.set(0, -600 , 0);
-    
+	
     /*camera = new THREE.OrthographicCamera( 
 					0, 
 					1000,
 					0, 
-					1000, -50, 50 );
+					1000, -60, 800 );*/
 					
-    camera.position.set(0, 0, -2);*/
+    //camera.position.set(0, 0, -2);
     
-    camera.lookAt(scene.position);
+    camera.up = new THREE.Vector3( 0, 0, 1 );
+    camera.position.set(0,0,0);
+    camera.lookAt(new THREE.Vector3(500,500,0));
     
     scene.add(camera);
+        
+    var light = new THREE.PointLight();
+	light.position.set(500, 500, 500);
+	scene.add(light);
     
     boidsEngine = new BOIDS.BoidsEngine();
     
@@ -73,7 +78,8 @@ function initializeScene(){
 
 	var universeMaterial = new THREE.MeshBasicMaterial({
 		color:0xFFFFFF,
-		wireframe: true
+		//side:THREE.DoubleSide
+		wireframe:true
 	} );
 
 	var universeMesh = new THREE.Mesh( universeGeometry, universeMaterial );
@@ -84,8 +90,9 @@ function initializeScene(){
     
     //Create Obstacles Meshes
     for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
-		var obstacleMaterial = new THREE.MeshBasicMaterial({
+		var obstacleMaterial = new THREE.MeshPhongMaterial({
 			color:0xFFFFFF,
+			wrapAround:  true
 		});
 		
 		var obstacle = boidsEngine.universe.obstacles[i];
@@ -93,16 +100,14 @@ function initializeScene(){
 			new THREE.CylinderGeometry(
 					obstacle.size,
 					obstacle.size,
-					obstacle.height,
-					obstacle.size,
-					10,
-					false),
+					obstacle.height),
 					obstacleMaterial);
-					
+		obstacleMesh.add(new THREE.AxisHelper(2000));
+		obstacleMesh.rotation.x = Math.PI/2;
 		obstacleMesh.position.set(
 			obstacle.position.x,
 			obstacle.position.y,
-			obstacle.position.z);
+			obstacle.position.z+obstacle.size/2);
 		
 		obstacle.mesh = obstacleMesh;
 		scene.add(obstacle.mesh);
@@ -110,17 +115,22 @@ function initializeScene(){
     
     //Create Boids Meshes
     for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
-		var boidGeometry = new THREE.Geometry();
+		//var boidGeometry = new THREE.Geometry();
 		
-		boidGeometry.vertices.push(new THREE.Vector3(-1.0,  1.0, 0.0));
-		boidGeometry.vertices.push(new THREE.Vector3(-1.0,  -1.0, 0.0));
-		boidGeometry.vertices.push(new THREE.Vector3( 0.0,  0.0, 0.0));		
-		boidGeometry.faces.push(new THREE.Face3(0, 1, 2));
+		var boidGeometry = new THREE.CylinderGeometry(
+					0,
+					4,
+					15);
+		
+		/*boidGeometry.vertices.push(new THREE.Vector3(-0.5,  1.0, 0.0));
+		boidGeometry.vertices.push(new THREE.Vector3(-0.5,  -1.0, 0.0));
+		boidGeometry.vertices.push(new THREE.Vector3( 0.5,  0.0, 0.0));		
+		boidGeometry.faces.push(new THREE.Face3(0, 1, 2));*/
 		
 		// Create a white basic material and activate the 'doubleSided' attribute.
-		var boidMaterial = new THREE.MeshBasicMaterial({
-			color:0xFFFFFF,
-			side:THREE.DoubleSide
+		var boidMaterial = new THREE.MeshPhongMaterial({
+			color:0xFFFF00,
+			wrapAround:  true
 		});
 
 		var boid = boidsEngine.universe.boids[i];
@@ -131,17 +141,13 @@ function initializeScene(){
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
-		boidMesh.scale.set(8,8,1);
 		boid.mesh = boidMesh;
 		
 		scene.add(boidMesh);
 		
-		/*var velocityGeometry = new THREE.Geometry();
-		velocityGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
-		velocityGeometry.vertices.push(new THREE.Vector3(1,0,0));
-		velocityGeometry.vertices.push(new THREE.Vector3(0.85,0.1,0));
-		velocityGeometry.vertices.push(new THREE.Vector3(0.85,-0.1,0));
-		velocityGeometry.vertices.push(new THREE.Vector3(1,0,0));
+		var velocityGeometry = new THREE.Geometry();
+		velocityGeometry.vertices.push(new THREE.Vector3(0,0, 0));
+		velocityGeometry.vertices.push(new THREE.Vector3(0,1,0));		
 		
 		var velocityMaterial = new THREE.LineBasicMaterial({
 			color: 0xffffff
@@ -154,7 +160,7 @@ function initializeScene(){
 			boid.position.z);
 		velocityMesh.scale.set(30,30,1);
 		boid.velocityMesh = velocityMesh;		
-		scene.add(velocityMesh);*/
+		scene.add(velocityMesh);
 		
 		// boid sight
 		/*var circleMaterial = new THREE.MeshBasicMaterial({
@@ -176,8 +182,16 @@ function initializeScene(){
 
 
 function renderScene(){
-    var delta=(Date.now()-lastRenderTime)/10000;
+    var delta=(Date.now()-lastRenderTime)/1000;
     if (delta>0){
+		/*var refBoid = boidsEngine.universe.boids[0];
+		camera.position.set(
+			refBoid.position.x,
+			refBoid.position.y,
+			refBoid.position.z);
+		var look = refBoid.position.add(refBoid.velocity);
+		camera.lookAt(new THREE.Vector3(look.x,look.y,look.z));*/
+		
         for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
 			var boid = boidsEngine.universe.boids[i];
 			//console.log(boid.num+" x =[ "+boid.position.x+" , "+boid.position.y+" , "+boid.position.z+ " ] ");
@@ -192,29 +206,28 @@ function renderScene(){
 				boid.position.z);*/
 			
 			var velNorm = boid.velocity.norm();
-			var angleX = Math.acos(boid.velocity.x/velNorm);
 			
-			if(boid.velocity.y < 0){
-				angleX = -angleX;
-			}
-			
-			var angleY = Math.acos(boid.velocity.y/velNorm);
-			
-			if(boid.velocity.z < 0){
-				angleY = -angleY;
-			}
-			
-			var angleZ = Math.acos(boid.velocity.z/velNorm);
+			var angleZ = Math.acos(boid.velocity.y/velNorm);
 			
 			if(boid.velocity.x < 0){
 				angleZ = -angleZ;
 			}
 			
-			boid.mesh.rotation.z = angleX;
-			boid.mesh.rotation.x = angleY;
-			boid.mesh.rotation.y = angleZ;
+			var angleX = Math.acos(
+							Math.sqrt(
+								Math.pow(boid.velocity.x,2)+
+								Math.pow(boid.velocity.y,2))/velNorm);
 			
-			/*console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
+			/*if(boid.velocity.z < 0){
+				angleX = -angleX;
+			}*/
+			
+			boid.mesh.rotation.x =  angleX;
+			boid.mesh.rotation.z = -angleZ;
+			
+			/*boid.mesh.rotation.y = angleZ;*/
+			
+			//console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
 			
 			boid.velocityMesh.position.set(
 				boid.position.x,
@@ -222,13 +235,14 @@ function renderScene(){
 				boid.position.z);
 				
 			
-			boid.velocityMesh.rotation.z = angleX;
-			boid.velocityMesh.rotation.y = angleZ;
-			boid.velocityMesh.rotation.x = angleY;*/
+			boid.velocityMesh.rotation.x = angleX;
+			boid.velocityMesh.rotation.z = -angleZ;
+			
 		}
 		lastRenderTime=Date.now();
 		renderer.render(scene, camera);
 		boidsEngine.engineLoop();
+		
 	}	    
     requestAnimationFrame(renderScene);
 }

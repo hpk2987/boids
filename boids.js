@@ -135,7 +135,7 @@ BOIDS.BoidsEngine.prototype.engineLoop = function(){
 };
 
 BOIDS.RuleFlockCenterOfMass = function(){
-	this.influence = 0.004;
+	this.influence = 0.002;
 };
 	
 BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){

@@ -59,7 +59,7 @@ function initializeScene(){
     //camera.position.set(0, 0, -2);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(0,0,0);
+    camera.position.set(500,0,500);
     camera.lookAt(new THREE.Vector3(500,500,0));
     
     scene.add(camera);
@@ -141,6 +141,7 @@ function initializeScene(){
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
+		boidMesh.add(new THREE.AxisHelper(50));
 		boid.mesh = boidMesh;
 		
 		scene.add(boidMesh);
@@ -207,23 +208,20 @@ function renderScene(){
 			
 			var velNorm = boid.velocity.norm();
 			
-			var angleZ = Math.acos(boid.velocity.y/velNorm);
+			var phi = Math.PI/2+Math.atan(boid.velocity.x/boid.velocity.y);
 			
-			if(boid.velocity.x < 0){
-				angleZ = -angleZ;
-			}
+			/*if(boid.velocity.x < 0){
+				phi = -phi;
+			}*/
 			
-			var angleX = Math.acos(
-							Math.sqrt(
-								Math.pow(boid.velocity.x,2)+
-								Math.pow(boid.velocity.y,2))/velNorm);
+			var theta = Math.PI/2-Math.acos(boid.velocity.z/velNorm);
 			
 			/*if(boid.velocity.z < 0){
 				angleX = -angleX;
 			}*/
 			
-			boid.mesh.rotation.x =  angleX;
-			boid.mesh.rotation.z = -angleZ;
+			/*boid.mesh.rotation.x = theta;
+			boid.mesh.rotation.z = phi;*/
 			
 			/*boid.mesh.rotation.y = angleZ;*/
 			
@@ -235,8 +233,8 @@ function renderScene(){
 				boid.position.z);
 				
 			
-			boid.velocityMesh.rotation.x = angleX;
-			boid.velocityMesh.rotation.z = -angleZ;
+			boid.velocityMesh.rotation.x = theta;
+			boid.velocityMesh.rotation.z = phi;
 			
 		}
 		lastRenderTime=Date.now();

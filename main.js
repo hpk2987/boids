@@ -20,24 +20,22 @@ function resizeViewportToScreen(renderer,camera){
 	}
 }
 
-var rotWorldMatrix;
-// Rotate an object around an arbitrary axis in world space       
-function rotateAroundWorldAxis(object, axis, radians) {
-    rotWorldMatrix = new THREE.Matrix4();
-    rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
+var rotObjMatrix;
+function rotateAroundObjectAxis(object, axis, radians) {
+    rotObjectMatrix = new THREE.Matrix4();
+    rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
 
     // old code for Three.JS pre r54:
-    //  rotWorldMatrix.multiply(object.matrix);
+    // object.matrix.multiplySelf(rotObjectMatrix);      // post-multiply
     // new code for Three.JS r55+:
-    rotWorldMatrix.multiply(object.matrix);                // pre-multiply
-
-    object.matrix = rotWorldMatrix;
+    object.matrix.multiply(rotObjectMatrix);
 
     // old code for Three.js pre r49:
     // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
     // new code for Three.js r50+:
-    object.rotation.setEulerFromRotationMatrix(object.matrix);
+    object.rotation.setFromRotationMatrix(object.matrix);
 }
+
 
 function initializeScene(){
     // Renderer
@@ -108,10 +106,14 @@ function initializeScene(){
 	universeMesh.add(new THREE.AxisHelper(2000));
 	universeMesh.position.set(0,0,0);
 	
-	//rotateAroundWorldAxis(universeMesh,new THREE.Vector3(0,0,1),Math.PI/4);
-	universeMesh.rotateOnAxis(new THREE.Vector3(0,0,1),-Math.PI/4);
-	universeMesh.rotateOnAxis(new THREE.Vector3(1,0,0),Math.PI/4);
-	//universeMesh.rotation.z=Math.PI/4;	
+	rotateAroundObjectAxis(universeMesh,new THREE.Vector3(0,0,1),Math.PI/4);
+	rotateAroundObjectAxis(universeMesh,new THREE.Vector3(0,1,0),Math.PI/4);
+	universeMesh.rotation.z=0;
+	universeMesh.rotation.x=0;
+	universeMesh.rotation.y=0;
+	rotateAroundObjectAxis(universeMesh,new THREE.Vector3(0,1,0),Math.PI/4);
+	
+	//universeMesh.rotation.z=Math.PI/4;
     boidsEngine.universe.mesh = universeMesh;
     scene.add(universeMesh);
     
@@ -267,7 +269,7 @@ function renderScene(){
 		}
 		lastRenderTime=Date.now();
 		renderer.render(scene, camera);
-		boidsEngine.engineLoop();
+		//boidsEngine.engineLoop();
 		
 	}	    
     requestAnimationFrame(renderScene);

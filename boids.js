@@ -126,7 +126,7 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(5);
+	this.universe.createBoids(1);
 	//this.universe.createObstacles(1);
 };
 		

@@ -20,6 +20,25 @@ function resizeViewportToScreen(renderer,camera){
 	}
 }
 
+var rotWorldMatrix;
+// Rotate an object around an arbitrary axis in world space       
+function rotateAroundWorldAxis(object, axis, radians) {
+    rotWorldMatrix = new THREE.Matrix4();
+    rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
+
+    // old code for Three.JS pre r54:
+    //  rotWorldMatrix.multiply(object.matrix);
+    // new code for Three.JS r55+:
+    rotWorldMatrix.multiply(object.matrix);                // pre-multiply
+
+    object.matrix = rotWorldMatrix;
+
+    // old code for Three.js pre r49:
+    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
+    // new code for Three.js r50+:
+    object.rotation.setEulerFromRotationMatrix(object.matrix);
+}
+
 function initializeScene(){
     // Renderer
     renderer = new THREE.WebGLRenderer();
@@ -59,31 +78,40 @@ function initializeScene(){
     //camera.position.set(0, 0, -2);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(500,0,500);
-    camera.lookAt(new THREE.Vector3(500,500,0));
+    camera.position.set(90,90,90);
+    camera.lookAt(new THREE.Vector3(0,0,0));
     
     scene.add(camera);
         
     var light = new THREE.PointLight();
-	light.position.set(500, 500, 500);
+	light.position.set(0, 0, 60);
 	scene.add(light);
     
     boidsEngine = new BOIDS.BoidsEngine();
     
     //Universe
     var universeGeometry = new THREE.CubeGeometry( 
-							boidsEngine.universe.width,
+							50,50,50);
+							/*boidsEngine.universe.width,
 							boidsEngine.universe.height,
-							boidsEngine.universe.depth);
-
-	var universeMaterial = new THREE.MeshBasicMaterial({
+							boidsEngine.universe.depth);*/
+	
+	var universeMaterial = new THREE.MeshPhongMaterial({
 		color:0xFFFFFF,
+		wrapAround:  true
 		//side:THREE.DoubleSide
-		wireframe:true
+		//wireframe:true
 	} );
 
+	scene.add(new THREE.AxisHelper(2000));
 	var universeMesh = new THREE.Mesh( universeGeometry, universeMaterial );
-	universeMesh.position.set(500,500,500);
+	universeMesh.add(new THREE.AxisHelper(2000));
+	universeMesh.position.set(0,0,0);
+	
+	//rotateAroundWorldAxis(universeMesh,new THREE.Vector3(0,0,1),Math.PI/4);
+	universeMesh.rotateOnAxis(new THREE.Vector3(0,0,1),-Math.PI/4);
+	universeMesh.rotateOnAxis(new THREE.Vector3(1,0,0),Math.PI/4);
+	//universeMesh.rotation.z=Math.PI/4;	
     boidsEngine.universe.mesh = universeMesh;
     scene.add(universeMesh);
     

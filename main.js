@@ -20,23 +20,6 @@ function resizeViewportToScreen(renderer,camera){
 	}
 }
 
-var rotObjMatrix;
-function rotateAroundObjectAxis(object, axis, radians) {
-    rotObjectMatrix = new THREE.Matrix4();
-    rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
-
-    // old code for Three.JS pre r54:
-    // object.matrix.multiplySelf(rotObjectMatrix);      // post-multiply
-    // new code for Three.JS r55+:
-    object.matrix.multiply(rotObjectMatrix);
-
-    // old code for Three.js pre r49:
-    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
-    // new code for Three.js r50+:
-    object.rotation.setFromRotationMatrix(object.matrix);
-}
-
-
 function initializeScene(){
     // Renderer
     renderer = new THREE.WebGLRenderer();
@@ -61,10 +44,10 @@ function initializeScene(){
 
     //Camara    
     camera = new THREE.PerspectiveCamera(
-					45, 
+					45,
 					canvasWidth / canvasHeight, 
 					0.1, 
-					1500);
+					2000);
 					
 	
     /*camera = new THREE.OrthographicCamera( 
@@ -76,44 +59,33 @@ function initializeScene(){
     //camera.position.set(0, 0, -2);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(90,90,90);
-    camera.lookAt(new THREE.Vector3(0,0,0));
+    camera.position.set(500,0,1000);
+    camera.lookAt(new THREE.Vector3(500,500,0));
     
     scene.add(camera);
         
     var light = new THREE.PointLight();
-	light.position.set(0, 0, 60);
+	light.position.set(500, 500, 500);
 	scene.add(light);
     
     boidsEngine = new BOIDS.BoidsEngine();
     
     //Universe
     var universeGeometry = new THREE.CubeGeometry( 
-							50,50,50);
-							/*boidsEngine.universe.width,
+							boidsEngine.universe.width,
 							boidsEngine.universe.height,
-							boidsEngine.universe.depth);*/
+							boidsEngine.universe.depth);
 	
-	var universeMaterial = new THREE.MeshPhongMaterial({
+	var universeMaterial = new THREE.MeshBasicMaterial({
 		color:0xFFFFFF,
-		wrapAround:  true
+		//wrapAround:  true
 		//side:THREE.DoubleSide
-		//wireframe:true
+		wireframe:true
 	} );
 
 	scene.add(new THREE.AxisHelper(2000));
 	var universeMesh = new THREE.Mesh( universeGeometry, universeMaterial );
-	universeMesh.add(new THREE.AxisHelper(2000));
-	universeMesh.position.set(0,0,0);
-	
-	rotateAroundObjectAxis(universeMesh,new THREE.Vector3(0,0,1),Math.PI/4);
-	rotateAroundObjectAxis(universeMesh,new THREE.Vector3(0,1,0),Math.PI/4);
-	universeMesh.rotation.z=0;
-	universeMesh.rotation.x=0;
-	universeMesh.rotation.y=0;
-	rotateAroundObjectAxis(universeMesh,new THREE.Vector3(0,1,0),Math.PI/4);
-	
-	//universeMesh.rotation.z=Math.PI/4;
+	universeMesh.position.set(500,500,500);
     boidsEngine.universe.mesh = universeMesh;
     scene.add(universeMesh);
     
@@ -171,7 +143,7 @@ function initializeScene(){
 			boid.position.x,
 			boid.position.y,
 			boid.position.z);
-		boidMesh.add(new THREE.AxisHelper(50));
+		//boidMesh.add(new THREE.AxisHelper(50));
 		boid.mesh = boidMesh;
 		
 		scene.add(boidMesh);
@@ -236,24 +208,13 @@ function renderScene(){
 				boid.position.y,
 				boid.position.z);*/
 			
-			var velNorm = boid.velocity.norm();
+			var polar = boid.velocity.polar();
 			
-			var phi = Math.PI/2+Math.atan(boid.velocity.x/boid.velocity.y);
-			
-			/*if(boid.velocity.x < 0){
-				phi = -phi;
-			}*/
-			
-			var theta = Math.PI/2-Math.acos(boid.velocity.z/velNorm);
-			
-			/*if(boid.velocity.z < 0){
-				angleX = -angleX;
-			}*/
-			
-			/*boid.mesh.rotation.x = theta;
-			boid.mesh.rotation.z = phi;*/
-			
-			/*boid.mesh.rotation.y = angleZ;*/
+			boid.mesh.rotation.x = 0;
+			boid.mesh.rotation.y = 0;
+			boid.mesh.rotation.z = 0;
+			boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
+			boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
 			
 			//console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
 			
@@ -263,15 +224,20 @@ function renderScene(){
 				boid.position.z);
 				
 			
-			boid.velocityMesh.rotation.x = theta;
-			boid.velocityMesh.rotation.z = phi;
+			//console.log(boid.num+" phi =[ "+phi*180/Math.PI+ " ] ");
+			
+			boid.velocityMesh.rotation.x = 0;
+			boid.velocityMesh.rotation.y = 0;
+			boid.velocityMesh.rotation.z = 0;
+			boid.velocityMesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
+			boid.velocityMesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
 			
 		}
 		lastRenderTime=Date.now();
 		renderer.render(scene, camera);
-		//boidsEngine.engineLoop();
+		boidsEngine.engineLoop();
 		
-	}	    
+	}
     requestAnimationFrame(renderScene);
 }
 

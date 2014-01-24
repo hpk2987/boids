@@ -35,6 +35,29 @@ BOIDS.Vec3.prototype.getIdx = function(idx){
 	}
 };
 
+BOIDS.Vec3.prototype.normalize = function(){
+	var norm = this.norm();
+	if(norm==0){
+		return new BOIDS.Vec3(0,0,0);
+	}
+	return new BOIDS.Vec3(this.x/norm,this.y/norm,this.z/norm);
+	
+}
+
+BOIDS.Vec3.prototype.polar = function(){
+	var norm = this.norm();
+			
+	var phi = this.y!=0 ? (Math.atan(this.x/this.y)) : 0;
+
+	if(this.y < 0){
+		phi = Math.PI+phi;
+	}
+	
+	var theta = Math.PI/2-(norm!=0 ? Math.acos(this.z/norm) : Math.PI/2);			
+	
+	return { phi:phi , theta:theta };
+}
+
 BOIDS.Boid = function(num,position,velocity){
 	this.position = position;
 	this.velocity = velocity;
@@ -126,7 +149,7 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(1);
+	this.universe.createBoids(40);
 	//this.universe.createObstacles(1);
 };
 		
@@ -231,19 +254,19 @@ BOIDS.RuleSpeedLimit.prototype.apply = function(boid,universe,acumm){
 BOIDS.RuleReachObjective = function(){
 	this.influence = 0.08;
 	//this.objectiveSpeed = new BOIDS.Vec3(0.1,0.1,0);
-	this.objective = new BOIDS.Vec3(900,900,0);
+	this.objective = new BOIDS.Vec3(900,900,100);
 } 
 
 BOIDS.RuleReachObjective.prototype.apply = function(boid,universe,acumm){
 	if(boid.position.sub(this.objective).norm()<10){
 		this.objective = new BOIDS.Vec3(
-					this.objective.x==0?900:0,
-					this.objective.y==0?900:0,
-					this.objective.z==0?0:0);
+					this.objective.x==100?900:100,
+					this.objective.y==100?900:100,
+					this.objective.z==900?100:900);
 	}
 	
 	var c = this.objective.sub(boid.position);
-	c = c.mult(1/c.norm()).mult(this.influence);
+	c = c.normalize().mult(this.influence);
 	return c;
 	/*return this.objectiveSpeed.mult(this.influence);*/
 };

@@ -48,19 +48,10 @@ function initializeScene(){
 					canvasWidth / canvasHeight, 
 					0.1, 
 					2000);
-					
-	
-    /*camera = new THREE.OrthographicCamera( 
-					0, 
-					1000,
-					0, 
-					1000, -60, 800 );*/
-					
-    //camera.position.set(0, 0, -2);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(500,0,1000);
-    camera.lookAt(new THREE.Vector3(500,500,0));
+    camera.position.set(500,0,700);
+    camera.lookAt(new THREE.Vector3(500,500,100));
     
     scene.add(camera);
         
@@ -109,78 +100,28 @@ function initializeScene(){
 		obstacleMesh.position.set(
 			obstacle.position.x,
 			obstacle.position.y,
-			obstacle.position.z+obstacle.size/2);
+			obstacle.position.z+obstacle.height/2);
 		
 		obstacle.mesh = obstacleMesh;
 		scene.add(obstacle.mesh);
 	}
-    
-    //Create Boids Meshes
-    for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
-		//var boidGeometry = new THREE.Geometry();
-		
-		var boidGeometry = new THREE.CylinderGeometry(
-					0,
-					4,
-					15);
-		
-		/*boidGeometry.vertices.push(new THREE.Vector3(-0.5,  1.0, 0.0));
-		boidGeometry.vertices.push(new THREE.Vector3(-0.5,  -1.0, 0.0));
-		boidGeometry.vertices.push(new THREE.Vector3( 0.5,  0.0, 0.0));		
-		boidGeometry.faces.push(new THREE.Face3(0, 1, 2));*/
-		
-		// Create a white basic material and activate the 'doubleSided' attribute.
-		var boidMaterial = new THREE.MeshPhongMaterial({
-			color:0xFFFF00,
-			wrapAround:  true
-		});
 
-		var boid = boidsEngine.universe.boids[i];
-
-		// Create a mesh and insert the geometry and the material.
-		var boidMesh = new THREE.Mesh(boidGeometry, boidMaterial);
-		boidMesh.position.set(
-			boid.position.x,
-			boid.position.y,
-			boid.position.z);
-		//boidMesh.add(new THREE.AxisHelper(50));
-		boid.mesh = boidMesh;
-		
-		scene.add(boidMesh);
-		
-		var velocityGeometry = new THREE.Geometry();
-		velocityGeometry.vertices.push(new THREE.Vector3(0,0, 0));
-		velocityGeometry.vertices.push(new THREE.Vector3(0,1,0));		
-		
-		var velocityMaterial = new THREE.LineBasicMaterial({
-			color: 0xffffff
-		});
-		
-		var velocityMesh = new THREE.Line(velocityGeometry, velocityMaterial);
-		velocityMesh.position.set(
-			boid.position.x,
-			boid.position.y,
-			boid.position.z);
-		velocityMesh.scale.set(30,30,1);
-		boid.velocityMesh = velocityMesh;		
-		scene.add(velocityMesh);
-		
-		// boid sight
-		/*var circleMaterial = new THREE.MeshBasicMaterial({
-			color:0xFFFFFF,
-			wireframe: true,
-			side:THREE.DoubleSide
-		});
-		
-		var circleMesh = new THREE.Mesh(new THREE.CircleGeometry(boid.viewDistance), circleMaterial);
-		circleMesh.position.set(
-			boid.position.x,
-			boid.position.y,
-			boid.position.z);
-		
-		boid.sightMesh = circleMesh;
-		scene.add(circleMesh);*/
-	}
+	var loader = new THREE.JSONLoader();
+	loader.load( 
+		"models/Bird2.js",
+	 	function(geometry,materials){
+		    //Create Boids Meshes
+		    for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
+				var material = new THREE.MeshFaceMaterial( materials );
+				
+	            var boidMesh = new THREE.Mesh( geometry, material );
+				boidMesh.scale.set(20,20,20);
+				
+				var boid = boidsEngine.universe.boids[i];
+				boid.mesh = boidMesh;
+				scene.add(boidMesh);
+			}
+	 	});
 }
 
 
@@ -197,40 +138,21 @@ function renderScene(){
 		
         for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
 			var boid = boidsEngine.universe.boids[i];
-			//console.log(boid.num+" x =[ "+boid.position.x+" , "+boid.position.y+" , "+boid.position.z+ " ] ");
-			boid.mesh.position.set(
-				boid.position.x,
-				boid.position.y,
-				boid.position.z);
-			
-			/*boid.sightMesh.position.set(
-				boid.position.x,
-				boid.position.y,
-				boid.position.z);*/
-			
-			var polar = boid.velocity.polar();
-			
-			boid.mesh.rotation.x = 0;
-			boid.mesh.rotation.y = 0;
-			boid.mesh.rotation.z = 0;
-			boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
-			boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
-			
-			//console.log(boid.num+" v =[ "+boid.velocity.x+" , "+boid.velocity.y+" , "+boid.velocity.z+ " ] ");
-			
-			boid.velocityMesh.position.set(
-				boid.position.x,
-				boid.position.y,
-				boid.position.z);
+
+			if(boid.mesh){
+				boid.mesh.position.set(
+					boid.position.x,
+					boid.position.y,
+					boid.position.z);
 				
+				var polar = boid.velocity.polar();
 			
-			//console.log(boid.num+" phi =[ "+phi*180/Math.PI+ " ] ");
-			
-			boid.velocityMesh.rotation.x = 0;
-			boid.velocityMesh.rotation.y = 0;
-			boid.velocityMesh.rotation.z = 0;
-			boid.velocityMesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
-			boid.velocityMesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
+				boid.mesh.rotation.x = 0;
+				boid.mesh.rotation.y = 0;
+				boid.mesh.rotation.z = 0;
+				boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
+				boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
+			}
 			
 		}
 		lastRenderTime=Date.now();

@@ -113,7 +113,7 @@ BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
 };
 
 BOIDS.BoidsUniverse.prototype.createObstacles = function(amount){
-	this.obstacles.push(new BOIDS.Obstacle(new BOIDS.Vec3(500,500,0),60,120));
+	this.obstacles.push(new BOIDS.Obstacle(new BOIDS.Vec3(500,500,0),60,420));
 };
 
 BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
@@ -150,7 +150,7 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
 	this.universe.createBoids(40);
-	//this.universe.createObstacles(1);
+	this.universe.createObstacles(1);
 };
 		
 BOIDS.BoidsEngine.prototype.engineLoop = function(){
@@ -158,7 +158,7 @@ BOIDS.BoidsEngine.prototype.engineLoop = function(){
 };
 
 BOIDS.RuleFlockCenterOfMass = function(){
-	this.influence = 0.002;
+	this.influence = 0.0008;
 };
 	
 BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){
@@ -180,7 +180,7 @@ BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid,universe,acumm){
 };
 
 BOIDS.RuleSeparateFlock = function() {
-	this.influence = 0.09;
+	this.influence = 0.003;
 	this.distance = 20.0;
 };	
 BOIDS.RuleSeparateFlock.prototype.apply = function(boid,universe,acumm){
@@ -262,7 +262,7 @@ BOIDS.RuleReachObjective.prototype.apply = function(boid,universe,acumm){
 		this.objective = new BOIDS.Vec3(
 					this.objective.x==100?900:100,
 					this.objective.y==100?900:100,
-					this.objective.z==900?100:900);
+					this.objective.z==100?100:100);
 	}
 	
 	var c = this.objective.sub(boid.position);
@@ -273,6 +273,7 @@ BOIDS.RuleReachObjective.prototype.apply = function(boid,universe,acumm){
 
 BOIDS.RuleAvoidCollision = function() {
 	this.feelerPrediction = 15;
+	this.influence = 0.01;
 };
 	
 BOIDS.RuleAvoidCollision.prototype.apply = function(boid,universe,acumm){
@@ -282,7 +283,7 @@ BOIDS.RuleAvoidCollision.prototype.apply = function(boid,universe,acumm){
 		var feeler = boid.position.add(boid.velocity.mult(this.feelerPrediction));
 		if (obstacle.isInside(feeler)){
 			var w = obstacle.getDeflect(feeler);
-			c = c.add(w.mult(20));
+			c = c.add(w.mult(this.influence));
 		}
 	}
 

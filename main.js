@@ -152,11 +152,12 @@ function renderScene(){
     THREE.AnimationHandler.update( delta );
     
 	/*var refBoid = boidsEngine.universe.boids[0];
+	var camPos = refBoid.position.sub(refBoid.velocity.mult(30));
 	camera.position.set(
-		refBoid.position.x,
-		refBoid.position.y,
-		refBoid.position.z);
-	var look = refBoid.position.add(refBoid.velocity);
+		camPos.x,
+		camPos.y,
+		camPos.z);
+	var look = refBoid.position;
 	camera.lookAt(new THREE.Vector3(look.x,look.y,look.z));*/
 	
 	for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
@@ -176,8 +177,10 @@ function renderScene(){
 			boid.mesh.rotation.z = 0;
 			boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
 			boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
+			boid.mesh.rotateOnAxis(new THREE.Vector3(0,1,0),boid.inclination);
 		}
 		
+		console.log(boid.inclination);
 	}
 	renderer.render(scene, camera);
 	boidsEngine.engineLoop();

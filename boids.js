@@ -44,6 +44,10 @@ BOIDS.Vec3.prototype.normalize = function(){
 	
 }
 
+BOIDS.Vec3.prototype.dot = function(vec){
+	return (this.x*vec.x)+(this.y*vec.y)+(this.z*vec.z);
+}
+
 BOIDS.Vec3.prototype.polar = function(){
 	var norm = this.norm();
 			
@@ -71,6 +75,8 @@ BOIDS.Boid = function(
 	this.rules = rules;
 	this.surroundings = surroundings;
 	this.speedLimit = 1.3;
+	this.inclination = 0;
+	this.upVector = new BOIDS.Vec3(0,0,1);
 };
 
 BOIDS.Boid.prototype.update = function(){
@@ -79,6 +85,7 @@ BOIDS.Boid.prototype.update = function(){
 
 BOIDS.Boid.prototype.updateVelocity = function(){
 	var deltaVelocity;
+	var oldVelocity = this.velocity;
 	deltaVelocity = new BOIDS.Vec3(0,0,0);
 	for(var w=0; w<this.rules.length ;w++){
 		deltaVelocity = deltaVelocity.add(this.rules[w].apply(this));
@@ -89,6 +96,24 @@ BOIDS.Boid.prototype.updateVelocity = function(){
 	if (speed > this.speedLimit){
 		this.velocity = this.velocity.mult(this.speedLimit/speed);
 	}
+	
+	var proyectedOld = oldVelocity.sub(
+							this.upVector.mult(
+								oldVelocity.dot(this.upVector)));
+	var proyectedNew = this.velocity.sub(
+							this.upVector.mult(
+								this.velocity.dot(this.upVector)));
+	this.inclination = Math.acos(
+							proyectedOld.dot(proyectedNew)/
+							(proyectedOld.norm()*proyectedNew.norm()));
+							
+	if(isNaN(this.inclination)){
+		this.inclination = 0;
+	}
+}
+
+BOIDS.Boid.prototype.canSee = function(boid){
+	return (this.position.sub(boid.position).norm()<this.viewDistance);
 }
 
 BOIDS.Obstacle = function(position,size,height){
@@ -120,16 +145,23 @@ BOIDS.BoidsUniverse = function(){
 };
 	
 BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
-	var thisBoids = this.boids;
-	var thisObstacles = this.obstacles;
+	var that = this;
 	
 	var boid = new BOIDS.Boid(
 		this.boidCreationCounter,
 		position,
 		velocity,
 		{
-			getObstacles:function(){return thisObstacles;},
-			getBoids:function(){return thisBoids;}
+			withObstacles:function(funct){
+				that.obstacles.forEach(function(entry){funct(entry)});
+			},
+			withBoids:function(funct){
+				that.boids.forEach(function(entry){
+					if(entry!=boid){
+						funct(entry);
+					}
+				});
+			}
 		}
 		,
 		[new BOIDS.RuleFlockCenterOfMass(),
@@ -155,7 +187,7 @@ BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
 		randomPosition = new BOIDS.Vec3(
 			Math.random()*this.width,
 			Math.random()*this.height,
-			Math.random()*this.depth);
+			100/*Math.random()*this.depth*/);
 		randomVelocity = new BOIDS.Vec3(
 			Math.random()*3,
 			Math.random()*3,
@@ -171,7 +203,7 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(40);
+	this.universe.createBoids(1);
 	this.universe.createObstacles(1);
 };
 		
@@ -186,14 +218,12 @@ BOIDS.RuleFlockCenterOfMass = function(){
 BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid){
 	var c = new BOIDS.Vec3(0,0,0);
 	var count = 0;
-	var boids = boid.surroundings.getBoids();
-	for(var i=0; i<boids.length ;i++){
-		var otherBoid = boids[i];
-		if (otherBoid!=boid && boid.position.sub(otherBoid.position).norm()<boid.viewDistance ) {
+	boid.surroundings.withBoids(function(otherBoid){
+		if (boid.canSee(otherBoid)) {
 			c = c.add(otherBoid.position);
 			count++;
 		}
-	}
+	});
 	if (count!=0){
 		c = c.mult(1 / count);
 		return (c.sub(boid.position)).mult(this.influence);
@@ -208,15 +238,11 @@ BOIDS.RuleSeparateFlock = function() {
 };	
 BOIDS.RuleSeparateFlock.prototype.apply = function(boid){
 	var c = new BOIDS.Vec3(0,0,0);
-	var boids = boid.surroundings.getBoids();
-	for(var i=0; i<boids.length ;i++){
-		var otherBoid = boids[i];
-		if (otherBoid!=boid) {
-			if (boid.position.sub(otherBoid.position).norm() < this.distance){
-				c = c.add(boid.position.sub(otherBoid.position));
-			}
+	boid.surroundings.withBoids(function(otherBoid){
+		if (boid.position.sub(otherBoid.position).norm() < this.distance){
+			c = c.add(boid.position.sub(otherBoid.position));
 		}
-	}
+	});
 
 	return c.mult(this.influence);
 };
@@ -228,14 +254,12 @@ BOIDS.RuleMatchFlockVelocity = function(){
 BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid){
 	var c = new BOIDS.Vec3(0,0,0);
 	var count = 0;
-	var boids = boid.surroundings.getBoids();
-	for(var i=0; i<boids.length ;i++){
-		var otherBoid = boids[i];
-		if (otherBoid!=boid && boid.position.sub(otherBoid.position).norm()<boid.viewDistance) {
+	boid.surroundings.withBoids(function(otherBoid){
+		if (boid.canSee(otherBoid)) {
 			c = c.add(otherBoid.velocity);
 			count++;
 		}
-	}
+	});
 	
 	if (count!=0){
 		c = c.mult( 1 / count);	
@@ -247,7 +271,7 @@ BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid){
 
 BOIDS.RuleKeepInBounds = function(bounds){
 	this.attraction=0.1;
-	this.bounds;
+	this.bounds = bounds;
 };
 
 BOIDS.RuleKeepInBounds.prototype.apply = function(boid) {
@@ -295,15 +319,14 @@ BOIDS.RuleAvoidCollision = function() {
 	
 BOIDS.RuleAvoidCollision.prototype.apply = function(boid){
 	var c = new BOIDS.Vec3(0,0,0);
-	var obstacles = boid.surroundigs.getObstacles();
-	for(var i=0; i<obstacles.length ;i++){
-		var obstacle = obstacles[i];
-		var feeler = boid.position.add(boid.velocity.mult(this.feelerPrediction));
+	var that = this;
+	boid.surroundings.withObstacles(function(obstacle){
+		var feeler = boid.position.add(boid.velocity.mult(that.feelerPrediction));
 		if (obstacle.isInside(feeler)){
 			var w = obstacle.getDeflect(feeler);
-			c = c.add(w.mult(this.influence));
+			c = c.add(w.mult(that.influence));
 		}
-	}
+	});	
 
 	return c;
 };

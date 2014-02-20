@@ -50,7 +50,7 @@ function initializeScene(){
 					2000);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(500,0,700);
+    camera.position.set(200,200,300);
     camera.lookAt(new THREE.Vector3(500,500,100));
     
     scene.add(camera);
@@ -137,7 +137,7 @@ function initializeScene(){
 					THREE.AnimationHandler.CATMULLROM
 				);
 
-				animation.play(0.05 * Math.random());
+				animation.play(Math.random()*1.2);
 
 				boid.animation = animation;
 			}
@@ -177,10 +177,7 @@ function renderScene(){
 			boid.mesh.rotation.z = 0;
 			boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
 			boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
-			boid.mesh.rotateOnAxis(new THREE.Vector3(0,1,0),boid.inclination);
 		}
-		
-		console.log(boid.inclination);
 	}
 	renderer.render(scene, camera);
 	boidsEngine.engineLoop();

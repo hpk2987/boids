@@ -48,6 +48,13 @@ BOIDS.Vec3.prototype.dot = function(vec){
 	return (this.x*vec.x)+(this.y*vec.y)+(this.z*vec.z);
 }
 
+BOIDS.Vec3.prototype.cross = function(vec){
+	return new BOIDS.Vec3(
+			(this.y*vec.z)-(this.z*vec.y),
+			(this.z*vec.x)-(this.x*vec.z),
+			(this.x*vec.y)-(this.y*vec.x));
+}
+
 BOIDS.Vec3.prototype.polar = function(){
 	var norm = this.norm();
 			
@@ -75,8 +82,6 @@ BOIDS.Boid = function(
 	this.rules = rules;
 	this.surroundings = surroundings;
 	this.speedLimit = 1.3;
-	this.inclination = 0;
-	this.upVector = new BOIDS.Vec3(0,0,1);
 };
 
 BOIDS.Boid.prototype.update = function(){
@@ -84,9 +89,7 @@ BOIDS.Boid.prototype.update = function(){
 };
 
 BOIDS.Boid.prototype.updateVelocity = function(){
-	var deltaVelocity;
-	var oldVelocity = this.velocity;
-	deltaVelocity = new BOIDS.Vec3(0,0,0);
+	var deltaVelocity = new BOIDS.Vec3(0,0,0);
 	for(var w=0; w<this.rules.length ;w++){
 		deltaVelocity = deltaVelocity.add(this.rules[w].apply(this));
 	}
@@ -95,20 +98,6 @@ BOIDS.Boid.prototype.updateVelocity = function(){
 	var speed = this.velocity.norm();
 	if (speed > this.speedLimit){
 		this.velocity = this.velocity.mult(this.speedLimit/speed);
-	}
-	
-	var proyectedOld = oldVelocity.sub(
-							this.upVector.mult(
-								oldVelocity.dot(this.upVector)));
-	var proyectedNew = this.velocity.sub(
-							this.upVector.mult(
-								this.velocity.dot(this.upVector)));
-	this.inclination = Math.acos(
-							proyectedOld.dot(proyectedNew)/
-							(proyectedOld.norm()*proyectedNew.norm()));
-							
-	if(isNaN(this.inclination)){
-		this.inclination = 0;
 	}
 }
 
@@ -122,17 +111,22 @@ BOIDS.Obstacle = function(position,size,height){
 	this.position = position;
 }
 
-BOIDS.Obstacle.prototype.isInside = function(point){
-	if(point.z > this.height){
-		return false;
-	}
-	var w = new BOIDS.Vec3(point.x,point.y,this.position.z);
-	return (w.sub(this.position).norm() < this.size);
+BOIDS.Obstacle.prototype.isInside = function(feeler){
+	var w = new BOIDS.Vec3(
+		feeler.position.x,
+		feeler.position.y,
+		this.position.z);
+		
+	return (this.position.sub(w).norm()<(feeler.radius+this.size));
 }
 
-BOIDS.Obstacle.prototype.getDeflect = function(point){
-	var w = new BOIDS.Vec3(point.x,point.y,this.position.z);
-	return w.sub(this.position);
+BOIDS.Obstacle.prototype.getDeflect = function(feeler){
+	var w = new BOIDS.Vec3(
+		this.position.x,
+		this.position.y,
+		feeler.position.z);
+	
+	return feeler.position.sub(w);
 }
 
 BOIDS.BoidsUniverse = function(){
@@ -168,7 +162,7 @@ BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
 		new BOIDS.RuleSeparateFlock(),
 		new BOIDS.RuleMatchFlockVelocity(),
 		new BOIDS.RuleKeepInBounds(this),
-		new BOIDS.RuleReachObjective(),
+		new BOIDS.RuleFollowPath(),
 		new BOIDS.RuleAvoidCollision()]);
 		
 	this.boidCreationCounter+=1;
@@ -187,7 +181,7 @@ BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
 		randomPosition = new BOIDS.Vec3(
 			Math.random()*this.width,
 			Math.random()*this.height,
-			100/*Math.random()*this.depth*/);
+			Math.random()*this.depth);
 		randomVelocity = new BOIDS.Vec3(
 			Math.random()*3,
 			Math.random()*3,
@@ -203,7 +197,7 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(1);
+	this.universe.createBoids(30);
 	this.universe.createObstacles(1);
 };
 		
@@ -237,9 +231,10 @@ BOIDS.RuleSeparateFlock = function() {
 	this.distance = 20.0;
 };	
 BOIDS.RuleSeparateFlock.prototype.apply = function(boid){
+	var that = this;
 	var c = new BOIDS.Vec3(0,0,0);
 	boid.surroundings.withBoids(function(otherBoid){
-		if (boid.position.sub(otherBoid.position).norm() < this.distance){
+		if (boid.position.sub(otherBoid.position).norm() < that.distance){
 			c = c.add(boid.position.sub(otherBoid.position));
 		}
 	});
@@ -248,7 +243,7 @@ BOIDS.RuleSeparateFlock.prototype.apply = function(boid){
 };
 		
 BOIDS.RuleMatchFlockVelocity = function(){
-	this.influence = 0.04;
+	this.influence = 0.03;
 };	
 
 BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid){
@@ -292,36 +287,41 @@ BOIDS.RuleKeepInBounds.prototype.apply = function(boid) {
 };
 
 
-BOIDS.RuleReachObjective = function(){
+BOIDS.RuleFollowPath = function(){
 	this.influence = 0.08;
-	//this.objectiveSpeed = new BOIDS.Vec3(0.1,0.1,0);
-	this.objective = new BOIDS.Vec3(900,900,100);
+	this.pathIndex=0;
+	this.path = [
+		new BOIDS.Vec3(900,900,100),
+		new BOIDS.Vec3(0,900,200),
+		new BOIDS.Vec3(9000,0,300),
+		new BOIDS.Vec3(0,0,100)];
 } 
 
-BOIDS.RuleReachObjective.prototype.apply = function(boid){
-	if(boid.position.sub(this.objective).norm()<10){
-		this.objective = new BOIDS.Vec3(
-					this.objective.x==100?900:100,
-					this.objective.y==100?900:100,
-					this.objective.z==100?100:100);
+BOIDS.RuleFollowPath.prototype.apply = function(boid){
+	var objective = this.path[this.pathIndex];
+	if(boid.position.sub(objective).norm()<10){
+		this.pathIndex = this.pathIndex<this.path.length-1?this.pathIndex+1:0;	
 	}
 	
-	var c = this.objective.sub(boid.position);
+	var c = objective.sub(boid.position);
 	c = c.normalize().mult(this.influence);
-	return c;
-	/*return this.objectiveSpeed.mult(this.influence);*/
+	return c;	
 };
 
 BOIDS.RuleAvoidCollision = function() {
-	this.feelerPrediction = 15;
-	this.influence = 0.01;
+	this.feelerPrediction = 55;
+	this.feelerRadius = 30;
+	this.influence = 0.003;
 };
 	
 BOIDS.RuleAvoidCollision.prototype.apply = function(boid){
 	var c = new BOIDS.Vec3(0,0,0);
 	var that = this;
 	boid.surroundings.withObstacles(function(obstacle){
-		var feeler = boid.position.add(boid.velocity.mult(that.feelerPrediction));
+		var feeler = {
+			position:boid.position.add(boid.velocity.mult(that.feelerPrediction)),
+			radius:that.feelerRadius
+		}
 		if (obstacle.isInside(feeler)){
 			var w = obstacle.getDeflect(feeler);
 			c = c.add(w.mult(that.influence));

@@ -49,7 +49,7 @@ function initializeScene(){
 					0.1, 
 					2000);
     
-    camera.up = new THREE.Vector3( 300, 300, 50 );
+    camera.up = new THREE.Vector3( 0, 0, 1 );
     camera.position.set(200,200,50);
     camera.lookAt(new THREE.Vector3(500,500,100));
     
@@ -144,44 +144,148 @@ function initializeScene(){
 }
 
 
-function initializeControls(){	
-	var cameraStep = 10.0;	
+var LookAroundControls = function(camera,element){
+	this.camera = camera;
 	
-	camera.strafe = function(dir){
+	var strafeStep = 10.0;	
+	this.strafe = function(dir,camera){
 		var lookDirection = new THREE.Vector3(0,0,-1);
 		lookDirection.applyQuaternion( camera.quaternion );		
 		
 		var strafeVec = lookDirection
 			.crossVectors(lookDirection,camera.up);
-		strafeVec.multiplyScalar(cameraStep/strafeVec.length());
+		strafeVec.multiplyScalar(strafeStep/strafeVec.length()*dir);
 		
 		camera.position.set(
-				camera.position.x+(strafeVec.x*dir),
-				camera.position.y+(strafeVec.x*dir),
-				camera.position.z+(strafeVec.x*dir));
-		camera.lookAt(
-				new THREE.Vector3(
-					camera.position.x+(lookDirection.x),
-					camera.position.y+(lookDirection.x),
-					camera.position.z+(lookDirection.x)));
+				camera.position.x+(strafeVec.x),
+				camera.position.y+(strafeVec.y),
+				camera.position.z+(strafeVec.z));
 	}
 	
-	window.addEventListener('keydown', function(e){
-		console.log(e.keyCode);
-		if(e.keyCode==68){ //d
-			camera.strafe(1);
+	var moveStep = 10.0;
+	this.move = function(dir,camera){
+		var lookDirection = new THREE.Vector3(0,0,-1);
+		lookDirection.applyQuaternion( camera.quaternion );		
+		lookDirection.z = 0;
+		lookDirection.multiplyScalar(moveStep/lookDirection.length()*dir);
+		
+		camera.position.set(
+				camera.position.x+(lookDirection.x),
+				camera.position.y+(lookDirection.y),
+				camera.position.z+(lookDirection.z));
+	}
+}
+
+function initializeControls(){
+	
+	this.moveForward=false;
+	this.moveBackward=false;
+	this.moveLeft=false;
+	this.moveRight=false;
+	this.strafeSpeed = 0;
+	this.straightSpeed = 0;
+	
+	this.onKeyDown = function ( event ) {
+
+		switch( event.keyCode ) {
+
+			case 38: /*up*/
+			case 87: /*W*/ this.moveForward = true; break;
+
+			case 37: /*left*/
+			case 65: /*A*/ this.moveLeft = true; break;
+
+			case 40: /*down*/
+			case 83: /*S*/ this.moveBackward = true; break;
+
+			case 39: /*right*/
+			case 68: /*D*/ this.moveRight = true; break;
+
+			case 82: /*R*/ this.moveUp = true; break;
+			case 70: /*F*/ this.moveDown = true; break;
+
+			case 81: /*Q*/ this.freeze = !this.freeze; break;
+
+		}
+
+	};
+
+	this.onKeyUp = function ( event ) {
+
+		switch( event.keyCode ) {
+
+			case 38: /*up*/
+			case 87: /*W*/ this.moveForward = false; break;
+
+			case 37: /*left*/
+			case 65: /*A*/ this.moveLeft = false; break;
+
+			case 40: /*down*/
+			case 83: /*S*/ this.moveBackward = false; break;
+
+			case 39: /*right*/
+			case 68: /*D*/ this.moveRight = false; break;
+
+			case 82: /*R*/ this.moveUp = false; break;
+			case 70: /*F*/ this.moveDown = false; break;
+
+		}
+
+	};
+	
+	var strafe = function(dir,step){
+		var lookDirection = new THREE.Vector3(0,0,-1);
+		lookDirection.applyQuaternion( camera.quaternion );		
+		
+		var strafeVec = lookDirection
+			.crossVectors(lookDirection,camera.up);
+		strafeVec.multiplyScalar(step/strafeVec.length()*dir);
+		
+		camera.position.set(
+				camera.position.x+(strafeVec.x),
+				camera.position.y+(strafeVec.y),
+				camera.position.z+(strafeVec.z));
+	}
+	
+	var move = function(dir,step){
+		var lookDirection = new THREE.Vector3(0,0,-1);
+		lookDirection.applyQuaternion( camera.quaternion );		
+		lookDirection.z = 0;
+		lookDirection.multiplyScalar(step/lookDirection.length()*dir);
+		
+		camera.position.set(
+				camera.position.x+(lookDirection.x),
+				camera.position.y+(lookDirection.y),
+				camera.position.z+(lookDirection.z));
+	}
+	
+	var accel=1.0;
+	var maxSpeed=14.0;
+	this.update = function( delta ) {
+		if(this.moveForward){
+			this.straightSpeed += accel;
+			if(this.straightSpeed>accel){
+				this.straightSpeed = maxSpeed;
+			}
+			move(1,this.straightSpeed
 		}
 		
-		else if(e.keyCode==65){ //a
-			camera.strafe(-1);
+		if(this.moveBackward){
+			this.straightSpeed += accel;
+			if(this.straightSpeed>accel){
+				this.straightSpeed = maxSpeed;
+			}
+			
 		}
 		
-		else if(e.keyCode==87){ //w
+		if(this.moveLeft){
+			
 		}
 		
-		else if(e.keyCode==83){ //s
+		if(this.moveRight){
+			
 		}
-	});
+	}
 }
 
 function renderScene(){

@@ -82,6 +82,7 @@ BOIDS.Boid = function(
 	this.rules = rules;
 	this.surroundings = surroundings;
 	this.speedLimit = 1.3;
+	this.inclination = 0;
 };
 
 BOIDS.Boid.prototype.update = function(){
@@ -95,10 +96,12 @@ BOIDS.Boid.prototype.updateVelocity = function(){
 	}
 	this.velocity = this.velocity.add(deltaVelocity);
 	
+	var oldVelocity = this.velocity;
 	var speed = this.velocity.norm();
 	if (speed > this.speedLimit){
 		this.velocity = this.velocity.mult(this.speedLimit/speed);
-	}
+	};
+	
 }
 
 BOIDS.Boid.prototype.canSee = function(boid){
@@ -197,7 +200,7 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 
 BOIDS.BoidsEngine = function(){
 	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(30);
+	this.universe.createBoids(1);
 	this.universe.createObstacles(1);
 };
 		
@@ -295,11 +298,11 @@ BOIDS.RuleFollowPath = function(){
 		new BOIDS.Vec3(0,900,200),
 		new BOIDS.Vec3(9000,0,300),
 		new BOIDS.Vec3(0,0,100)];
-} 
+}
 
 BOIDS.RuleFollowPath.prototype.apply = function(boid){
 	var objective = this.path[this.pathIndex];
-	if(boid.position.sub(objective).norm()<10){
+	if(boid.position.sub(objective).norm()<100){
 		this.pathIndex = this.pathIndex<this.path.length-1?this.pathIndex+1:0;	
 	}
 	

@@ -49,8 +49,8 @@ function initializeScene(){
 					0.1, 
 					2000);
     
-    camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(200,200,300);
+    camera.up = new THREE.Vector3( 300, 300, 50 );
+    camera.position.set(200,200,50);
     camera.lookAt(new THREE.Vector3(500,500,100));
     
     scene.add(camera);
@@ -61,25 +61,24 @@ function initializeScene(){
     
     boidsEngine = new BOIDS.BoidsEngine();
     
-    //Universe
-    var universeGeometry = new THREE.CubeGeometry( 
-							boidsEngine.universe.width,
-							boidsEngine.universe.height,
-							boidsEngine.universe.depth);
-	
-	var universeMaterial = new THREE.MeshBasicMaterial({
-		color:0xFFFFFF,
-		//wrapAround:  true
-		//side:THREE.DoubleSide
-		wireframe:true
-	} );
+    //Universe skydome
+	/*var geometry = new THREE.SphereGeometry(2000, 60, 40);
+	var uniforms = {
+	  texture: { type: 't', value: loadTexture('/textures/skydome.jpg') }
+	};
 
-	scene.add(new THREE.AxisHelper(2000));
-	var universeMesh = new THREE.Mesh( universeGeometry, universeMaterial );
-	universeMesh.position.set(500,500,500);
-    boidsEngine.universe.mesh = universeMesh;
-    scene.add(universeMesh);
-    
+	var material = new THREE.ShaderMaterial( {
+	  uniforms:       uniforms,
+	  vertexShader:   document.getElementById('sky-vertex').textContent,
+	  fragmentShader: document.getElementById('sky-fragment').textContent
+	});
+
+	skyBox = new THREE.Mesh(geometry, material);
+	skyBox.scale.set(-1, 1, 1);
+	skyBox.eulerOrder = 'XZY';
+	skyBox.renderDepth = 1000.0;
+	scene.add(skyBox);*/
+
     
     //Create Obstacles Meshes
     for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
@@ -137,7 +136,7 @@ function initializeScene(){
 					THREE.AnimationHandler.CATMULLROM
 				);
 
-				animation.play(Math.random()*1.2);
+				animation.play(true,Math.random()*1.2);
 
 				boid.animation = animation;
 			}
@@ -145,11 +144,51 @@ function initializeScene(){
 }
 
 
+function initializeControls(){	
+	var cameraStep = 10.0;	
+	
+	camera.strafe = function(dir){
+		var lookDirection = new THREE.Vector3(0,0,-1);
+		lookDirection.applyQuaternion( camera.quaternion );		
+		
+		var strafeVec = lookDirection
+			.crossVectors(lookDirection,camera.up);
+		strafeVec.multiplyScalar(cameraStep/strafeVec.length());
+		
+		camera.position.set(
+				camera.position.x+(strafeVec.x*dir),
+				camera.position.y+(strafeVec.x*dir),
+				camera.position.z+(strafeVec.x*dir));
+		camera.lookAt(
+				new THREE.Vector3(
+					camera.position.x+(lookDirection.x),
+					camera.position.y+(lookDirection.x),
+					camera.position.z+(lookDirection.x)));
+	}
+	
+	window.addEventListener('keydown', function(e){
+		console.log(e.keyCode);
+		if(e.keyCode==68){ //d
+			camera.strafe(1);
+		}
+		
+		else if(e.keyCode==65){ //a
+			camera.strafe(-1);
+		}
+		
+		else if(e.keyCode==87){ //w
+		}
+		
+		else if(e.keyCode==83){ //s
+		}
+	});
+}
+
 function renderScene(){
     requestAnimationFrame(renderScene);
     
     var delta = clock.getDelta();
-    THREE.AnimationHandler.update( delta );
+    THREE.AnimationHandler.update( delta+0.01 );
     
 	/*var refBoid = boidsEngine.universe.boids[0];
 	var camPos = refBoid.position.sub(refBoid.velocity.mult(30));
@@ -177,17 +216,16 @@ function renderScene(){
 			boid.mesh.rotation.z = 0;
 			boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
 			boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
+			
+			//boid.animation.update(delta*Math.random);
 		}
 	}
 	renderer.render(scene, camera);
 	boidsEngine.engineLoop();
 }
 
-function justDoit(){
-	boidsEngine.engineLoop();
-}
-
 function webGLStart() {
-    initializeScene();    
+    initializeScene();
+    initializeControls();
     renderScene();
 }

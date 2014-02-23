@@ -20,6 +20,9 @@ http.createServer(function (request, response) {
 		case '.png':
 			contentType = 'image/png';
 			break;
+		case '.jpg':
+			contentType = 'image/jpeg';
+			break;
 	}
 	
 	fs.exists(filePath, function(exists) {

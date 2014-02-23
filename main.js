@@ -48,7 +48,7 @@ function initializeScene(){
 					45,
 					canvasWidth / canvasHeight, 
 					0.1, 
-					2000);
+					5000);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
     camera.position.set(200,200,50);
@@ -65,9 +65,9 @@ function initializeScene(){
     boidsEngine = new BOIDS.BoidsEngine();
     
     //Universe skydome
-	/*var geometry = new THREE.SphereGeometry(2000, 60, 40);
+	var geometry = new THREE.SphereGeometry(3000, 60, 40,0,Math.PI*2,0,Math.PI);
 	var uniforms = {
-	  texture: { type: 't', value: loadTexture('/textures/skydome.jpg') }
+	  texture: { type: 't', value: THREE.ImageUtils.loadTexture('/textures/skydome.jpg') }
 	};
 
 	var material = new THREE.ShaderMaterial( {
@@ -78,9 +78,9 @@ function initializeScene(){
 
 	skyBox = new THREE.Mesh(geometry, material);
 	skyBox.scale.set(-1, 1, 1);
-	skyBox.eulerOrder = 'XZY';
+	skyBox.rotation.x = Math.PI/2;
 	skyBox.renderDepth = 1000.0;
-	scene.add(skyBox);*/
+	scene.add(skyBox);
 
     
     //Create Obstacles Meshes

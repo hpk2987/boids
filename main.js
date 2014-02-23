@@ -8,6 +8,7 @@ var scene;
 var camera;
 var renderer;
 var boidsEngine;
+var controls;
 
 function resizeViewportToScreen(renderer,camera){
 	var WIDTH = window.innerWidth,
@@ -55,6 +56,8 @@ function initializeScene(){
     
     scene.add(camera);
         
+	controls = new LookAroundControls(camera,window);
+		
     var light = new THREE.PointLight();
 	light.position.set(500, 500, 500);
 	scene.add(light);
@@ -143,165 +146,13 @@ function initializeScene(){
 	 	});
 }
 
-
-var LookAroundControls = function(camera,element){
-	this.camera = camera;
-	
-	var strafeStep = 10.0;	
-	this.strafe = function(dir,camera){
-		var lookDirection = new THREE.Vector3(0,0,-1);
-		lookDirection.applyQuaternion( camera.quaternion );		
-		
-		var strafeVec = lookDirection
-			.crossVectors(lookDirection,camera.up);
-		strafeVec.multiplyScalar(strafeStep/strafeVec.length()*dir);
-		
-		camera.position.set(
-				camera.position.x+(strafeVec.x),
-				camera.position.y+(strafeVec.y),
-				camera.position.z+(strafeVec.z));
-	}
-	
-	var moveStep = 10.0;
-	this.move = function(dir,camera){
-		var lookDirection = new THREE.Vector3(0,0,-1);
-		lookDirection.applyQuaternion( camera.quaternion );		
-		lookDirection.z = 0;
-		lookDirection.multiplyScalar(moveStep/lookDirection.length()*dir);
-		
-		camera.position.set(
-				camera.position.x+(lookDirection.x),
-				camera.position.y+(lookDirection.y),
-				camera.position.z+(lookDirection.z));
-	}
-}
-
-function initializeControls(){
-	
-	this.moveForward=false;
-	this.moveBackward=false;
-	this.moveLeft=false;
-	this.moveRight=false;
-	this.strafeSpeed = 0;
-	this.straightSpeed = 0;
-	
-	this.onKeyDown = function ( event ) {
-
-		switch( event.keyCode ) {
-
-			case 38: /*up*/
-			case 87: /*W*/ this.moveForward = true; break;
-
-			case 37: /*left*/
-			case 65: /*A*/ this.moveLeft = true; break;
-
-			case 40: /*down*/
-			case 83: /*S*/ this.moveBackward = true; break;
-
-			case 39: /*right*/
-			case 68: /*D*/ this.moveRight = true; break;
-
-			case 82: /*R*/ this.moveUp = true; break;
-			case 70: /*F*/ this.moveDown = true; break;
-
-			case 81: /*Q*/ this.freeze = !this.freeze; break;
-
-		}
-
-	};
-
-	this.onKeyUp = function ( event ) {
-
-		switch( event.keyCode ) {
-
-			case 38: /*up*/
-			case 87: /*W*/ this.moveForward = false; break;
-
-			case 37: /*left*/
-			case 65: /*A*/ this.moveLeft = false; break;
-
-			case 40: /*down*/
-			case 83: /*S*/ this.moveBackward = false; break;
-
-			case 39: /*right*/
-			case 68: /*D*/ this.moveRight = false; break;
-
-			case 82: /*R*/ this.moveUp = false; break;
-			case 70: /*F*/ this.moveDown = false; break;
-
-		}
-
-	};
-	
-	var strafe = function(dir,step){
-		var lookDirection = new THREE.Vector3(0,0,-1);
-		lookDirection.applyQuaternion( camera.quaternion );		
-		
-		var strafeVec = lookDirection
-			.crossVectors(lookDirection,camera.up);
-		strafeVec.multiplyScalar(step/strafeVec.length()*dir);
-		
-		camera.position.set(
-				camera.position.x+(strafeVec.x),
-				camera.position.y+(strafeVec.y),
-				camera.position.z+(strafeVec.z));
-	}
-	
-	var move = function(dir,step){
-		var lookDirection = new THREE.Vector3(0,0,-1);
-		lookDirection.applyQuaternion( camera.quaternion );		
-		lookDirection.z = 0;
-		lookDirection.multiplyScalar(step/lookDirection.length()*dir);
-		
-		camera.position.set(
-				camera.position.x+(lookDirection.x),
-				camera.position.y+(lookDirection.y),
-				camera.position.z+(lookDirection.z));
-	}
-	
-	var accel=1.0;
-	var maxSpeed=14.0;
-	this.update = function( delta ) {
-		if(this.moveForward){
-			this.straightSpeed += accel;
-			if(this.straightSpeed>accel){
-				this.straightSpeed = maxSpeed;
-			}
-			move(1,this.straightSpeed
-		}
-		
-		if(this.moveBackward){
-			this.straightSpeed += accel;
-			if(this.straightSpeed>accel){
-				this.straightSpeed = maxSpeed;
-			}
-			
-		}
-		
-		if(this.moveLeft){
-			
-		}
-		
-		if(this.moveRight){
-			
-		}
-	}
-}
-
 function renderScene(){
     requestAnimationFrame(renderScene);
     
     var delta = clock.getDelta();
     THREE.AnimationHandler.update( delta+0.01 );
     
-	/*var refBoid = boidsEngine.universe.boids[0];
-	var camPos = refBoid.position.sub(refBoid.velocity.mult(30));
-	camera.position.set(
-		camPos.x,
-		camPos.y,
-		camPos.z);
-	var look = refBoid.position;
-	camera.lookAt(new THREE.Vector3(look.x,look.y,look.z));*/
+	controls.update(delta);
 	
 	for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
 		var boid = boidsEngine.universe.boids[i];
@@ -330,6 +181,5 @@ function renderScene(){
 
 function webGLStart() {
     initializeScene();
-    initializeControls();
     renderScene();
 }

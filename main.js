@@ -1,14 +1,83 @@
-
-window.onload = function(){
-	webGLStart();
-}
-
 var clock = new THREE.Clock();
 var scene;
 var camera;
 var renderer;
 var boidsEngine;
 var controls;
+
+window.onload = function(){
+	initializeScene();
+	pointerLockInit();	
+    renderScene();
+}
+
+function pointerLockInit(){
+	var blocker = document.getElementById( 'blocker' );
+
+	// http://www.html5rocks.com/en/tutorials/pointerlock/intro/
+
+	var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
+
+	if ( havePointerLock ) {
+		var element = document.body;
+		var pointerlockchange = function ( event ) {
+
+			if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
+				controls.enabled = true;
+				blocker.style.display = 'none';
+			} else {
+				controls.enabled = false;
+				blocker.style.display = '-webkit-box';
+				blocker.style.display = '-moz-box';
+				blocker.style.display = 'box';
+
+				instructions.style.display = '';
+			}
+		}
+
+		var pointerlockerror = function ( event ) {
+			instructions.style.display = '';
+		}
+
+		// Hook pointer lock state change events
+		document.addEventListener( 'pointerlockchange', pointerlockchange, false );
+		document.addEventListener( 'mozpointerlockchange', pointerlockchange, false );
+		document.addEventListener( 'webkitpointerlockchange', pointerlockchange, false );
+
+		document.addEventListener( 'pointerlockerror', pointerlockerror, false );
+		document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
+		document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
+
+		instructions.addEventListener( 'click', function ( event ) {
+			instructions.style.display = 'none';
+
+			// Ask the browser to lock the pointer
+			element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+			
+			if ( /Firefox/i.test( navigator.userAgent ) ) {
+				var fullscreenchange = function ( event ) {
+					if ( document.fullscreenElement === element || document.mozFullscreenElement === element || document.mozFullScreenElement === element ) {
+						document.removeEventListener( 'fullscreenchange', fullscreenchange );
+						document.removeEventListener( 'mozfullscreenchange', fullscreenchange );
+						
+						element.requestPointerLock();
+					}
+				}
+
+				document.addEventListener( 'fullscreenchange', fullscreenchange, false );
+				document.addEventListener( 'mozfullscreenchange', fullscreenchange, false );
+
+				element.requestFullscreen = element.requestFullscreen || element.mozRequestFullscreen || element.mozRequestFullScreen || element.webkitRequestFullscreen;
+				element.requestFullscreen();
+
+			} else {
+				element.requestPointerLock();
+			}
+		}, false );
+	} else {
+		instructions.innerHTML = 'Your browser doesn\'t seem to support Pointer Lock API';
+	}
+}
 
 function resizeViewportToScreen(renderer,camera){
 	var WIDTH = window.innerWidth,
@@ -38,7 +107,7 @@ function initializeScene(){
     });
 
 
-    document.getElementById("canvas").appendChild(renderer.domElement);
+    document.body.appendChild( renderer.domElement );
 
 	//Scene
     scene = new THREE.Scene();
@@ -50,16 +119,15 @@ function initializeScene(){
 					0.1, 
 					5000);
     
-    camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(500,200,100);
-    camera.lookAt(new THREE.Vector3(500,500,100));
-    
-    scene.add(camera);
+    controls = new THREE.PointerLockControls(camera);
         
-	controls = new LookAroundControls(camera);
+    scene.add( controls.getObject() );
 		
     var light = new THREE.PointLight();
 	light.position.set(500, 500, 500);
+	
+	scene.add(new THREE.AxisHelper(2000));
+	
 	scene.add(light);
     
     boidsEngine = new BOIDS.BoidsEngine();
@@ -97,7 +165,6 @@ function initializeScene(){
 					obstacle.size,
 					obstacle.height),
 					obstacleMaterial);
-		obstacleMesh.add(new THREE.AxisHelper(2000));
 		obstacleMesh.rotation.x = Math.PI/2;
 		obstacleMesh.position.set(
 			obstacle.position.x,
@@ -177,9 +244,4 @@ function renderScene(){
 	}
 	renderer.render(scene, camera);
 	boidsEngine.engineLoop();
-}
-
-function webGLStart() {
-    initializeScene();
-    renderScene();
 }

@@ -1,10 +1,10 @@
-LookAroundControls = function(camera,domElement){
+LookAroundControls = function(camera){
 	
 	this.moveForward	= false;
 	this.moveBackward	= false;
 	this.moveLeft		= false;
 	this.moveRight		= false;
-	this.domElement 	= domElement;
+	this.domElement 	= document;
 	
 	this.drag = {
 		dragging:false,
@@ -113,23 +113,10 @@ LookAroundControls = function(camera,domElement){
 				camera.position.z+(lookDirection.z));
 	}
 	
-	var rotationMatrixY = new THREE.Matrix4();
-	var rotationMatrixZ = new THREE.Matrix4();
 	var rotate = function(xDelta,yDelta){
-		var lookDirection = new THREE.Vector3(0,0,-1);
-		lookDirection.applyQuaternion( camera.quaternion );		
-		lookDirection.z = 0;
-		lookDirection.multiplyScalar(1/lookDirection.length());
-		
-		rotationMatrixY.makeRotationAxis(new THREE.Vector3(0,0,1),xDelta*Math.PI/6);
-		rotationMatrixZ.makeRotationAxis(new THREE.Vector3(0,1,0),yDelta*Math.PI/6);
-		lookDirection.applyMatrix4(rotationMatrixZ.multiply(rotationMatrixY));
-		
-		camera.lookAt(
-			new THREE.Vector3(
-				lookDirection.x,
-				lookDirection.y,
-				lookDirection.z));
+		camera.rotation.y += Math.PI/92;
+		//camera.rotateOnAxis(new THREE.Vector3(1,0,0),Math.PI/40000*yDelta)
+		//camera.rotateOnAxis(new THREE.Vector3(0,1,0),Math.PI/40000*xDelta);
 	}
 	
 	var speed=5.0;

@@ -51,12 +51,12 @@ function initializeScene(){
 					5000);
     
     camera.up = new THREE.Vector3( 0, 0, 1 );
-    camera.position.set(200,200,50);
+    camera.position.set(500,200,100);
     camera.lookAt(new THREE.Vector3(500,500,100));
     
     scene.add(camera);
         
-	controls = new LookAroundControls(camera,window);
+	controls = new LookAroundControls(camera);
 		
     var light = new THREE.PointLight();
 	light.position.set(500, 500, 500);

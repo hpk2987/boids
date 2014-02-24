@@ -4,11 +4,20 @@ var camera;
 var renderer;
 var boidsEngine;
 var controls;
+var stats;
 
 window.onload = function(){
+	initStats();
 	initializeScene();
 	pointerLockInit();	
     renderScene();
+}
+
+function initStats(){
+	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.top = '0px';
+	document.body.appendChild( stats.domElement );
 }
 
 function pointerLockInit(){
@@ -111,7 +120,7 @@ function initializeScene(){
 
 	//Scene
     scene = new THREE.Scene();
-
+	
     //Camara    
     camera = new THREE.PerspectiveCamera(
 					45,
@@ -123,8 +132,8 @@ function initializeScene(){
         
     scene.add( controls.getObject() );
 		
-    var light = new THREE.PointLight();
-	light.position.set(500, 500, 500);
+    var light = new THREE.DirectionalLight( 0xE8DB90, 0.5 );
+	light.position.set(-500, 500, 20);
 	
 	scene.add(new THREE.AxisHelper(2000));
 	
@@ -150,6 +159,23 @@ function initializeScene(){
 	skyBox.renderDepth = 1000.0;
 	scene.add(skyBox);
 
+	// Ground
+	var groundTexture = THREE.ImageUtils.loadTexture('/textures/grass_128x128.png');
+	
+	// assuming you want the texture to repeat in both directions:
+	groundTexture.wrapS = THREE.RepeatWrapping; 
+	groundTexture.wrapT = THREE.RepeatWrapping;
+
+	// how many times to repeat in each direction; the default is (1,1),
+	//   which is probably why your example wasn't working
+	groundTexture.repeat.set( 100, 100 ); 
+
+	groundMesh = new THREE.Mesh( 
+		new THREE.PlaneGeometry(1000, 1000, 70, 70), 
+		new THREE.MeshBasicMaterial({map: groundTexture}));
+		
+	groundMesh.position.set(500,500,0);
+	scene.add(groundMesh);
     
     //Create Obstacles Meshes
     for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
@@ -244,4 +270,5 @@ function renderScene(){
 	}
 	renderer.render(scene, camera);
 	boidsEngine.engineLoop();
+	stats.update();
 }

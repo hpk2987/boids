@@ -131,9 +131,14 @@ function initializeScene(){
     controls = new THREE.PointerLockControls(camera);
         
     scene.add( controls.getObject() );
+	
+	// soft white light 	
+	var ambient = new THREE.AmbientLight( 0x404040 );
+	//scene.add( ambient );
 		
-    var light = new THREE.DirectionalLight( 0xE8DB90, 0.5 );
-	light.position.set(-500, 500, 20);
+    var light = new THREE.HemisphereLight( 0xE8DB90, 0xE8DB90, 0.3 );
+	//light.position.set(0, 0, -1);
+	scene.add(light);
 	
 	scene.add(new THREE.AxisHelper(2000));
 	
@@ -160,7 +165,7 @@ function initializeScene(){
 	scene.add(skyBox);
 
 	// Ground
-	var groundTexture = THREE.ImageUtils.loadTexture('/textures/grass_128x128.png');
+	var groundTexture = THREE.ImageUtils.loadTexture('/textures/grass_512x512.png');
 	
 	// assuming you want the texture to repeat in both directions:
 	groundTexture.wrapS = THREE.RepeatWrapping; 
@@ -168,40 +173,32 @@ function initializeScene(){
 
 	// how many times to repeat in each direction; the default is (1,1),
 	//   which is probably why your example wasn't working
-	groundTexture.repeat.set( 100, 100 ); 
+	groundTexture.repeat.set( 70, 70 );
 
 	groundMesh = new THREE.Mesh( 
 		new THREE.PlaneGeometry(1000, 1000, 70, 70), 
-		new THREE.MeshBasicMaterial({map: groundTexture}));
+		new THREE.MeshPhongMaterial({map: groundTexture}));
 		
 	groundMesh.position.set(500,500,0);
 	scene.add(groundMesh);
-    
-    //Create Obstacles Meshes
-    for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
-		var obstacleMaterial = new THREE.MeshPhongMaterial({
-			color:0xFFFFFF,
-			wrapAround:  true
-		});
-		
-		var obstacle = boidsEngine.universe.obstacles[i];
-		var obstacleMesh = new THREE.Mesh(		
-			new THREE.CylinderGeometry(
-					obstacle.size,
-					obstacle.size,
-					obstacle.height),
-					obstacleMaterial);
-		obstacleMesh.rotation.x = Math.PI/2;
-		obstacleMesh.position.set(
-			obstacle.position.x,
-			obstacle.position.y,
-			obstacle.position.z+obstacle.height/2);
-		
-		obstacle.mesh = obstacleMesh;
-		scene.add(obstacle.mesh);
-	}
 
 	var loader = new THREE.JSONLoader();
+    
+    loader.load(
+		"models/Cartoon_Tree.js",
+	 	function(geometry,materials){
+			var material = new THREE.MeshFaceMaterial( materials );
+			
+			//Create Obstacles Meshes
+			for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
+				var obstacleMesh = new THREE.SkinnedMesh( geometry, material );
+				var obstacle = boidsEngine.universe.obstacles[i];
+				boidMesh.scale.set(20,20,20);
+				obstacle.mesh = obstacleMesh;
+				scene.add(obstacle.mesh);
+			}
+		});
+
 	loader.load( 
 		"models/Bird.js",
 	 	function(geometry,materials){

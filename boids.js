@@ -1,5 +1,33 @@
 var BOIDS = { REVISION : '1' };
 
+BOIDS.UniverseParameters = function(){
+	this.boidCount = 50;
+	this.boidViewDistance = 100;
+	this.boidSpeedLimit = 2.3;
+	this.obstacleCount = 20;
+	this.obstacleDistance = 140;
+	
+	this.centerOfMassInfluence = 0.0008;
+	
+	this.separateFlockInfluence = 0.003;
+	this.separationDistance = 20.0;
+	
+	this.matchVelocityInfluence = 0.03;
+	
+	this.keepInBoundsInfluence = 0.1;
+	
+	this.avoidCollisionFeelerPrediction = 45;
+	this.avoidCollisionFeelerRadius = 30;
+	this.avoidCollisionInfluence = 0.003;
+	
+	this.followPathInfluence = 0.08;
+	this.followPathPath = [
+		new BOIDS.Vec3(900,900,50),
+		new BOIDS.Vec3(0,900,100),
+		new BOIDS.Vec3(900,0,130),
+		new BOIDS.Vec3(0,0,20)];
+};
+
 BOIDS.Vec3 = function(x,y,z){
 	this.x=x;
 	this.y=y;
@@ -74,15 +102,16 @@ BOIDS.Boid = function(
 		position,
 		velocity,
 		surroundings,
-		rules){
+		rules,
+		speedLimit,
+		viewDistance){
 	this.position = position;
 	this.velocity = velocity;
-	this.viewDistance = 100;
+	this.viewDistance = viewDistance;
 	this.num=num;
 	this.rules = rules;
 	this.surroundings = surroundings;
-	this.speedLimit = 1.3;
-	this.inclination = 0;
+	this.speedLimit = speedLimit;
 };
 
 BOIDS.Boid.prototype.update = function(){
@@ -132,13 +161,14 @@ BOIDS.Obstacle.prototype.getDeflect = function(feeler){
 	return feeler.position.sub(w);
 }
 
-BOIDS.BoidsUniverse = function(){
+BOIDS.BoidsUniverse = function(params){
 	this.boids = [];
 	this.obstacles = [];
 	this.width = 1000;
 	this.height = 1000;
 	this.depth = 1000;
-	this.boidCreationCounter=0;	
+	this.boidCreationCounter=0;
+	this.params = params;
 };
 	
 BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
@@ -161,12 +191,24 @@ BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
 			}
 		}
 		,
-		[new BOIDS.RuleFlockCenterOfMass(),
-		new BOIDS.RuleSeparateFlock(),
-		new BOIDS.RuleMatchFlockVelocity(),
-		new BOIDS.RuleKeepInBounds(this),
-		new BOIDS.RuleFollowPath(),
-		new BOIDS.RuleAvoidCollision()]);
+		[new BOIDS.RuleFlockCenterOfMass(this.params.centerOfMassInfluence),
+		new BOIDS.RuleSeparateFlock(
+			this.params.separateFlockInfluence,
+			this.params.separationDistance),
+		new BOIDS.RuleMatchFlockVelocity(
+			this.params.matchVelocityInfluence),
+		new BOIDS.RuleKeepInBounds(
+			this,
+			this.params.keepInBoundsInfluence),
+		new BOIDS.RuleFollowPath(
+			this.params.followPathInfluence,
+			this.params.followPathPath),
+		new BOIDS.RuleAvoidCollision(
+			this.params.avoidCollisionFeelerPrediction,
+			this.params.avoidCollisionFeelerRadius,
+			this.params.avoidCollisionInfluence)],
+		this.params.boidSpeedLimit,
+		this.params.boidViewDistance);
 		
 	this.boidCreationCounter+=1;
 	this.boids.push(boid);
@@ -174,7 +216,26 @@ BOIDS.BoidsUniverse.prototype.createBoid = function(position,velocity){
 };
 
 BOIDS.BoidsUniverse.prototype.createObstacles = function(amount){
-	this.obstacles.push(new BOIDS.Obstacle(new BOIDS.Vec3(500,500,0),60,420));
+	for(var i=0;i<amount;i++){
+		var valid = true;
+		var position;
+		var scope = this;
+		do{
+			position = new BOIDS.Vec3(
+				Math.random()*this.width,
+				Math.random()*this.height,
+				0);
+			valid = true
+			this.obstacles.forEach(function(entry){
+				valid = (position.sub(entry.position).norm()>scope.params.obstacleDistance)&&valid;
+			});
+		}while(!valid);
+		
+		this.obstacles.push(new BOIDS.Obstacle(
+			position,
+			60,
+			160));
+	}
 };
 
 BOIDS.BoidsUniverse.prototype.createBoids = function(amount){
@@ -199,17 +260,17 @@ BOIDS.BoidsUniverse.prototype.update = function(){
 };
 
 BOIDS.BoidsEngine = function(){
-	this.universe = new BOIDS.BoidsUniverse();
-	this.universe.createBoids(1);
-	this.universe.createObstacles(1);
+	this.universe = new BOIDS.BoidsUniverse(new BOIDS.UniverseParameters());
+	this.universe.createBoids(this.universe.params.boidCount);
+	this.universe.createObstacles(this.universe.params.obstacleCount);
 };
 		
 BOIDS.BoidsEngine.prototype.engineLoop = function(){
 	this.universe.update();
 };
 
-BOIDS.RuleFlockCenterOfMass = function(){
-	this.influence = 0.0008;
+BOIDS.RuleFlockCenterOfMass = function(influence){
+	this.influence = influence;
 };
 	
 BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid){
@@ -229,9 +290,9 @@ BOIDS.RuleFlockCenterOfMass.prototype.apply = function(boid){
 	}
 };
 
-BOIDS.RuleSeparateFlock = function() {
-	this.influence = 0.003;
-	this.distance = 20.0;
+BOIDS.RuleSeparateFlock = function(influence,distance) {
+	this.influence = influence;
+	this.distance = distance;
 };	
 BOIDS.RuleSeparateFlock.prototype.apply = function(boid){
 	var that = this;
@@ -245,8 +306,8 @@ BOIDS.RuleSeparateFlock.prototype.apply = function(boid){
 	return c.mult(this.influence);
 };
 		
-BOIDS.RuleMatchFlockVelocity = function(){
-	this.influence = 0.03;
+BOIDS.RuleMatchFlockVelocity = function(influence){
+	this.influence = influence;
 };	
 
 BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid){
@@ -267,8 +328,8 @@ BOIDS.RuleMatchFlockVelocity.prototype.apply = function(boid){
 	}
 };
 
-BOIDS.RuleKeepInBounds = function(bounds){
-	this.attraction=0.1;
+BOIDS.RuleKeepInBounds = function(bounds,influence){
+	this.attraction=influence;
 	this.bounds = bounds;
 };
 
@@ -290,14 +351,10 @@ BOIDS.RuleKeepInBounds.prototype.apply = function(boid) {
 };
 
 
-BOIDS.RuleFollowPath = function(){
-	this.influence = 0.08;
+BOIDS.RuleFollowPath = function(influence,path){
+	this.influence = influence;
 	this.pathIndex=0;
-	this.path = [
-		new BOIDS.Vec3(900,900,100),
-		new BOIDS.Vec3(0,900,200),
-		new BOIDS.Vec3(9000,0,300),
-		new BOIDS.Vec3(0,0,100)];
+	this.path = path;
 }
 
 BOIDS.RuleFollowPath.prototype.apply = function(boid){
@@ -311,10 +368,10 @@ BOIDS.RuleFollowPath.prototype.apply = function(boid){
 	return c;	
 };
 
-BOIDS.RuleAvoidCollision = function() {
-	this.feelerPrediction = 55;
-	this.feelerRadius = 30;
-	this.influence = 0.003;
+BOIDS.RuleAvoidCollision = function(feelerPrediction,feelerRadius,influence) {
+	this.feelerPrediction = feelerPrediction;
+	this.feelerRadius = feelerRadius;
+	this.influence = influence;
 };
 	
 BOIDS.RuleAvoidCollision.prototype.apply = function(boid){

@@ -115,11 +115,11 @@ function initializeScene(){
 		resizeViewportToScreen(renderer,camera);
     });
 
-
     document.body.appendChild( renderer.domElement );
 
 	//Scene
     scene = new THREE.Scene();
+	scene.fog = new THREE.FogExp2( 0x666666, 0.0015 );
 	
     //Camara    
     camera = new THREE.PerspectiveCamera(
@@ -132,17 +132,18 @@ function initializeScene(){
         
     scene.add( controls.getObject() );
 	
-	// soft white light 	
-	var ambient = new THREE.AmbientLight( 0x404040 );
-	//scene.add( ambient );
-		
-    var light = new THREE.HemisphereLight( 0xE8DB90, 0xE8DB90, 0.3 );
-	//light.position.set(0, 0, -1);
+	// add subtle blue ambient lighting
+	var ambientLight = new THREE.AmbientLight(0x2f2f2f);
+	scene.add(ambientLight);
+	
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
+	directionalLight.position.set( 0, -3, 0.4 ); 
+	scene.add( directionalLight );
+	
+	var light = new THREE.HemisphereLight( 0xFFFFFF, 0x00ff00, 0.2 );
 	scene.add(light);
 	
 	scene.add(new THREE.AxisHelper(2000));
-	
-	scene.add(light);
     
     boidsEngine = new BOIDS.BoidsEngine();
     
@@ -165,7 +166,7 @@ function initializeScene(){
 	scene.add(skyBox);
 
 	// Ground
-	var groundTexture = THREE.ImageUtils.loadTexture('/textures/grass_512x512.png');
+	var groundTexture = THREE.ImageUtils.loadTexture('/textures/tgrass.jpg');
 	
 	// assuming you want the texture to repeat in both directions:
 	groundTexture.wrapS = THREE.RepeatWrapping; 
@@ -173,10 +174,10 @@ function initializeScene(){
 
 	// how many times to repeat in each direction; the default is (1,1),
 	//   which is probably why your example wasn't working
-	groundTexture.repeat.set( 70, 70 );
+	groundTexture.repeat.set( 70,70  );
 
 	groundMesh = new THREE.Mesh( 
-		new THREE.PlaneGeometry(1000, 1000, 70, 70), 
+		new THREE.PlaneGeometry(1600, 1600, 2, 2), 
 		new THREE.MeshPhongMaterial({map: groundTexture}));
 		
 	groundMesh.position.set(500,500,0);
@@ -188,12 +189,35 @@ function initializeScene(){
 		"models/Cartoon_Tree.js",
 	 	function(geometry,materials){
 			var material = new THREE.MeshFaceMaterial( materials );
+			var wireMat = new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true});
 			
 			//Create Obstacles Meshes
 			for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
-				var obstacleMesh = new THREE.SkinnedMesh( geometry, material );
+				var obstacleMesh = new THREE.Mesh( geometry, material );
 				var obstacle = boidsEngine.universe.obstacles[i];
-				boidMesh.scale.set(20,20,20);
+				var obstacleBoundsMesh = new THREE.Mesh( 
+					new THREE.CylinderGeometry( 
+						obstacle.size,
+						obstacle.size,
+						obstacle.height,
+						32 ),
+					wireMat ); 
+				scene.add( obstacleBoundsMesh );
+					
+				obstacleBoundsMesh.rotation.x=Math.PI/2
+				obstacleBoundsMesh.position.set(
+					obstacle.position.x,
+					obstacle.position.y,
+					obstacle.position.z+obstacle.height/2);
+				
+				obstacleMesh.position.set(
+					obstacle.position.x,
+					obstacle.position.y,
+					obstacle.position.z);
+					
+				obstacleMesh.scale.set(15,15,15);
+				obstacleMesh.rotation.x=Math.PI/2
+				obstacleMesh.rotation.y=Math.PI*2*Math.random();
 				obstacle.mesh = obstacleMesh;
 				scene.add(obstacle.mesh);
 			}
@@ -215,7 +239,7 @@ function initializeScene(){
 		    //Create Boids Meshes
 		    for ( var i=0 ; i<boidsEngine.universe.boids.length; i++){
 				var boidMesh = new THREE.SkinnedMesh( geometry, material );
-				boidMesh.scale.set(20,20,20);
+				boidMesh.scale.set(10,10,10);
 				
 				
 				var boid = boidsEngine.universe.boids[i];
@@ -240,7 +264,7 @@ function renderScene(){
     requestAnimationFrame(renderScene);
     
     var delta = clock.getDelta();
-    THREE.AnimationHandler.update( delta+0.01 );
+    THREE.AnimationHandler.update( delta );
     
 	controls.update(delta);
 	

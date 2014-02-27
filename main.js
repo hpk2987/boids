@@ -12,8 +12,12 @@ window.onload = function(){
 function startWithParams(params){
 	boidsEngine = new BOIDS.BoidsEngine(params);
 	
-	document.getElementById( 'blocker' ).style="";
-	document.getElementById( 'panel' ).style="display:none";
+	var blocker = document.getElementById( 'blocker' );
+	var panel = document.getElementById( 'panel' );
+	panel.parentNode.removeChild( panel );
+	
+	blocker.style.display="block";
+	blocker.focus();
 	
 	setTimeout(function(){
 		initStats();
@@ -139,7 +143,7 @@ function initializeScene(){
 
 	//Scene
     scene = new THREE.Scene();
-	scene.fog = new THREE.FogExp2( 0x666666, 0.0015 );
+	scene.fog = new THREE.FogExp2( 0x666666, 0.0005 );
 	
     //Camara    
     camera = new THREE.PerspectiveCamera(
@@ -153,20 +157,20 @@ function initializeScene(){
     scene.add( controls.getObject() );
 	
 	// add subtle blue ambient lighting
-	var ambientLight = new THREE.AmbientLight(0x2f2f2f);
-	scene.add(ambientLight);
+	//var ambientLight = new THREE.AmbientLight(0x2f2f2f);
+	//scene.add(ambientLight);
 	
 	var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
 	directionalLight.position.set( -4, 3, 0.4 ); 
 	scene.add( directionalLight );
 	
-	var light = new THREE.HemisphereLight( 0xffffff, 0x0fffff, 0.1 );
+	var light = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.02 );
 	scene.add(light);
 	
 	//scene.add(new THREE.AxisHelper(1000));
     
     //Universe skydome
-	var geometry = new THREE.SphereGeometry(1500, 60, 40,0,Math.PI*2,0,Math.PI/1.7);
+	var geometry = new THREE.SphereGeometry(3500, 60, 40,0,Math.PI*2,0,Math.PI/1.7);
 	var uniforms = {
 	  texture: { type: 't', value: THREE.ImageUtils.loadTexture('/textures/skydome_night.jpg') }
 	};

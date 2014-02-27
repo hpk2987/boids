@@ -9,28 +9,207 @@
         <script src="pointLockControls.js"></script>			
         <script src="boids.js"></script>
         <script src="main.js"></script>
+        <script type="text/javascript">
+			function updateRangeLabel(id,val) {
+			  document.getElementById(id+"_label").innerHTML=val; 
+			}
+			
+			function boidsFormSubmit(form){
+				var params = {};
+				for ( var i = 0; i < form.elements.length; i++ ) {
+				var e = form.elements[i];
+					if(e.name!=''){
+						params[e.name] = parseFloat(e.value);
+					}				   
+				}
+				params.followPathPath = [
+					new BOIDS.Vec3(900,900,50),
+					new BOIDS.Vec3(0,900,100),
+					new BOIDS.Vec3(900,0,130),
+					new BOIDS.Vec3(0,0,20)];
+				startWithParams(params);
+				return false;
+			}
+		</script>
     </head>
-	<script type="application/x-glsl" id="sky-vertex">
-	varying vec2 vUV;
-
-	void main() {
-	  vUV = uv;
-	  vec4 pos = vec4(position, 1.0);
-	  gl_Position = projectionMatrix * modelViewMatrix * pos;
-	}
-	</script>
-
-	<script type="application/x-glsl" id="sky-fragment">
-	uniform sampler2D texture;
-	varying vec2 vUV;
-
-	void main() {
-	  vec4 sample = texture2D(texture, vUV);
-	  gl_FragColor = vec4(sample.xyz, sample.w);
-	}
-	</script>
-    <body>
-        <div id="blocker">
+	<body>
+		<div id="panel">
+			<h1>Boids</h1>
+			<h2>Parametros:</h2>        
+			<form onsubmit="return boidsFormSubmit(this)">
+				<fieldset>
+					<legend>Boids</legend>
+					<label>Cantidad:</label>
+					<input 	name="boidCount" 
+							type="range" 
+							min="1" 
+							max="100" 
+							value="50" 
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="boidCount_label">50</label>
+					
+					<label>Alcance de visión:</label>
+					<input 	name="boidViewDistance" 
+							type="range" 
+							min="1" 
+							max="300" 
+							value="100"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="boidViewDistance_label">100</label>
+					
+					<label>Velocidad máxima:</label>
+					<input 	name="boidSpeedLimit" 
+							type="range" 
+							min="1.0" 
+							max="10.0" 
+							value="2.3" 
+							step="0.1"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="boidSpeedLimit_label">2.3</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Obstaculos</legend>
+					<label>Cantidad:</label>
+					<input 	name="obstacleCount" 
+							type="range" 
+							min="0" 
+							max="130" 
+							value="30"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="obstacleCount_label">30</label>
+					
+					<label>Distancia mínima entre 2 obstaculos:</label>
+					<input 	name="obstacleDistance" 
+							type="range" 
+							min="100" 
+							max="500" 
+							value="140"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="obstacleDistance_label">140</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Agrupamiento:</legend>
+					<label>Influencia:</label>
+					<input 	name="centerOfMassInfluence" 
+							type="range" 
+							min="0.0001" 
+							max="0.01" 
+							value="0.0008" 
+							step="0.0001"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="centerOfMassInfluence_label">0.0008</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Dispersión:</legend>
+					<label>Influencia:</label>
+					<input 	name="separateFlockInfluence" 
+							type="range" 
+							min="0.001" 
+							max="0.1" 
+							value="0.003" 
+							step="0.1"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="separateFlockInfluence_label">0.003</label>
+					
+					<label>Radio de influencia:</label>
+					<input 	name="separationDistance" 
+							type="range" 
+							min="10" 
+							max="100" 
+							value="20"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="separationDistance_label">20</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Velocidad del conjunto:</legend>
+					<label>Influencia:</label>
+					<input 	name="matchVelocityInfluence" 
+							type="range" 
+							min="0.01" 
+							max="1" 
+							value="0.03" 
+							step="0.01"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="matchVelocityInfluence_label">0.03</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Mantenerse dentro de los limites:</legend>
+					<label>Influencia:</label>
+					<input 	name="keepInBoundsInfluence" 
+							type="range" 
+							min="0.01" 
+							max="1" 
+							value="0.1" 
+							step="0.01"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="keepInBoundsInfluence_label">0.1</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Evitar colisión con obstáculos:</legend>
+					<label>Distancia minima de predicción:</label>
+					<input 	name="avoidCollisionFeelerPrediction" 
+							type="range" 
+							min="10" 
+							max="150" 
+							value="55"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="avoidCollisionFeelerPrediction_label">55</label>
+				
+					<label>Radio de predicción:</label>					
+					<input 	name="avoidCollisionFeelerRadius" 
+							type="range" 
+							min="1" 
+							max="100" 
+							value="15"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="avoidCollisionFeelerRadius_label">15</label>
+				
+					<label>Influencia:</label>
+					<input 	name="avoidCollisionInfluence" 
+							type="range" 
+							min="1" 
+							max="150" 
+							value="50"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="avoidCollisionInfluence_label">50</label>
+				</fieldset>
+				
+				<fieldset>
+					<legend>Camino prefijado:</legend>
+					<label>Influencía:</label>
+					<input 	name="followPathInfluence" 
+							type="range" 
+							min="0.01" 
+							max="1" 
+							value="0.08" 
+							step="0.01"
+							onkeyUp="updateRangeLabel(this.name,this.value)" 
+							onchange="updateRangeLabel(this.name,this.value)"/>
+					<label id="followPathInfluence_label">0.08</label>
+				</fieldset>
+				<input type="submit" value="Comenzar"/>
+			</form>
+		</div>
+        <div id="blocker" style="display:none">
 			<div id="instructions">
 				<span style="font-size:40px">Click</span>
 				<br />

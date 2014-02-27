@@ -23,6 +23,9 @@ http.createServer(function (request, response) {
 		case '.jpg':
 			contentType = 'image/jpeg';
 			break;
+		case '.glsl':
+			contentType = 'application/x-glsl';
+			break;
 	}
 	
 	fs.exists(filePath, function(exists) {

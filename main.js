@@ -6,11 +6,31 @@ var boidsEngine;
 var controls;
 var stats;
 
-window.onload = function(){
-	initStats();
-	initializeScene();
-	pointerLockInit();	
-    renderScene();
+window.onload = function(){	
+}
+
+function startWithParams(params){
+	boidsEngine = new BOIDS.BoidsEngine(params);
+	
+	document.getElementById( 'blocker' ).style="";
+	document.getElementById( 'panel' ).style="display:none";
+	
+	setTimeout(function(){
+		initStats();
+		initializeScene();
+		pointerLockInit();
+		renderScene();
+	},1000);
+}
+
+function getResource(theUrl)
+{
+    var xmlHttp = null;
+
+    xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", theUrl, false );
+    xmlHttp.send( null );
+    return xmlHttp.responseText;
 }
 
 function initStats(){
@@ -137,32 +157,30 @@ function initializeScene(){
 	scene.add(ambientLight);
 	
 	var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
-	directionalLight.position.set( 0, -3, 0.4 ); 
+	directionalLight.position.set( -4, 3, 0.4 ); 
 	scene.add( directionalLight );
 	
-	var light = new THREE.HemisphereLight( 0xFFFFFF, 0x00ff00, 0.2 );
+	var light = new THREE.HemisphereLight( 0xffffff, 0x0fffff, 0.1 );
 	scene.add(light);
 	
-	scene.add(new THREE.AxisHelper(2000));
-    
-    boidsEngine = new BOIDS.BoidsEngine();
+	//scene.add(new THREE.AxisHelper(1000));
     
     //Universe skydome
-	var geometry = new THREE.SphereGeometry(3000, 60, 40,0,Math.PI*2,0,Math.PI);
+	var geometry = new THREE.SphereGeometry(1500, 60, 40,0,Math.PI*2,0,Math.PI/1.7);
 	var uniforms = {
-	  texture: { type: 't', value: THREE.ImageUtils.loadTexture('/textures/skydome.jpg') }
+	  texture: { type: 't', value: THREE.ImageUtils.loadTexture('/textures/skydome_night.jpg') }
 	};
 
 	var material = new THREE.ShaderMaterial( {
 	  uniforms:       uniforms,
-	  vertexShader:   document.getElementById('sky-vertex').textContent,
-	  fragmentShader: document.getElementById('sky-fragment').textContent
+	  vertexShader:   getResource('/shaders/sky.vertex.glsl'),
+	  fragmentShader: getResource('/shaders/sky.fragment.glsl')
 	});
 
 	skyBox = new THREE.Mesh(geometry, material);
 	skyBox.scale.set(-1, 1, 1);
 	skyBox.rotation.x = Math.PI/2;
-	skyBox.renderDepth = 1000.0;
+	skyBox.renderDepth = 4000.0;
 	scene.add(skyBox);
 
 	// Ground
@@ -177,7 +195,7 @@ function initializeScene(){
 	groundTexture.repeat.set( 70,70  );
 
 	groundMesh = new THREE.Mesh( 
-		new THREE.PlaneGeometry(1600, 1600, 2, 2), 
+		new THREE.PlaneGeometry(2000, 2000, 2, 2), 
 		new THREE.MeshPhongMaterial({map: groundTexture}));
 		
 	groundMesh.position.set(500,500,0);
@@ -193,9 +211,10 @@ function initializeScene(){
 			
 			//Create Obstacles Meshes
 			for ( var i=0 ; i<boidsEngine.universe.obstacles.length; i++){
-				var obstacleMesh = new THREE.Mesh( geometry, material );
 				var obstacle = boidsEngine.universe.obstacles[i];
-				var obstacleBoundsMesh = new THREE.Mesh( 
+				
+				var obstacleMesh = new THREE.Mesh( geometry, material );
+				/*var obstacleBoundsMesh = new THREE.Mesh( 
 					new THREE.CylinderGeometry( 
 						obstacle.size,
 						obstacle.size,
@@ -208,7 +227,7 @@ function initializeScene(){
 				obstacleBoundsMesh.position.set(
 					obstacle.position.x,
 					obstacle.position.y,
-					obstacle.position.z+obstacle.height/2);
+					obstacle.position.z+obstacle.height/2);*/
 				
 				obstacleMesh.position.set(
 					obstacle.position.x,
@@ -285,8 +304,6 @@ function renderScene(){
 			boid.mesh.rotation.z = 0;
 			boid.mesh.rotateOnAxis(new THREE.Vector3(0,0,1),-polar.phi);
 			boid.mesh.rotateOnAxis(new THREE.Vector3(1,0,0),polar.theta);
-			
-			//boid.animation.update(delta*Math.random);
 		}
 	}
 	renderer.render(scene, camera);
